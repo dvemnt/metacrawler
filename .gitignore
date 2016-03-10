@@ -1,5 +1,8 @@
 *.py[codw]
 *.log
+*.sh
+
+.coverage
 
 __pycache__/
 dist/
