@@ -1,5 +1,7 @@
 # coding=utf-8
 
+import inspect
+
 
 class Field(object):
 
@@ -31,8 +33,8 @@ class Field(object):
         """The value setter."""
         self.__value = self.__to(value)
 
-    def search(self, page):
-        """Search value on page.
+    def parse(self, page):
+        """Parse value from page.
 
         :param page: `lxml.Element` instance.
         """
@@ -59,3 +61,56 @@ class Field(object):
 
         if self.__value is not None and self.__postprocessing is not None:
             self.value = self.__postprocessing(self.value)
+
+
+class Item(object):
+
+    """Item is aggregate of fields. Items can be nested."""
+
+    @classmethod
+    def get_fields(cls):
+        """Return all fields.
+
+        :returns: `generator` fields generator.
+        """
+        for key, value in cls.__dict__.items():
+            if issubclass(value.__class__, Field):
+                yield {'name': key, 'field': value}
+
+    @classmethod
+    def get_items(cls):
+        """Return all items.
+
+        :returns: `generator` items generator.
+        """
+        for key, value in cls.__dict__.items():
+            if inspect.isclass(value) and issubclass(value, Item):
+                yield {'name': key, 'item': value}
+
+    @classmethod
+    def parse(cls, page):
+        """Parse process.
+
+        :param page: `lxml.Element` instance.
+        """
+        for field in cls.get_fields():
+            field['field'].parse(page)
+
+        for item in cls.get_items():
+            item['item'].parse(page)
+
+    @classmethod
+    def as_dict(cls):
+        """Convert class to dict.
+
+        :returns: `dict` dict representation.
+        """
+        value = {}
+
+        for field in cls.get_fields():
+            value[field['name']] = field['field'].value
+
+        for item in cls.get_items():
+            value[item['name']] = item['item'].as_dict()
+
+        return value
