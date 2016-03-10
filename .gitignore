@@ -1,0 +1,7 @@
+*.py[codw]
+*.log
+
+__pycache__/
+dist/
+build/
+*.egg-info/
