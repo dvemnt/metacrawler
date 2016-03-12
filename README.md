@@ -5,6 +5,7 @@
 [![Build Status](https://travis-ci.org/pyvim/metacrawler.svg?branch=master)](https://travis-ci.org/pyvim/metacrawler)
 [![Coverage Status](https://coveralls.io/repos/github/pyvim/metacrawler/badge.svg?branch=master)](https://coveralls.io/github/pyvim/metacrawler?branch=master)
 [![PyPI](http://img.shields.io/pypi/v/metacrawler.svg?style=flat)](https://pypi.python.org/pypi/metacrawler)
+[![Documentation Status](http://readthedocs.org/projects/metacrawler/badge/?version=latest)](http://metacrawler.readthedocs.org/en/latest/?badge=latest)
 
 
 ## Installation ##
