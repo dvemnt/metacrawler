@@ -1,6 +1,6 @@
 title:      Library Reference
 prev_title: Installation
-prev_url:   install.html
+prev_url:   install
 
 
 # Using MetaCrawler #

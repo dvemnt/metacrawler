@@ -11,4 +11,4 @@ following command from the command line:
 
     `pip install metacrawler`
 
-You're ready to [use](reference.html) MetaCralwer.
+You're ready to [use](reference) MetaCralwer.

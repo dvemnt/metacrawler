@@ -7,7 +7,7 @@ prev_url:   siteindex.html
 
 This is a library for simply creating web-crawlers.
 
-See the [installation instructions](install.html) to get started.
+See the [installation instructions](install) to get started.
 
 ## Support ##
 
