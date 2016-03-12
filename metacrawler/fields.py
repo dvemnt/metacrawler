@@ -1,7 +1,5 @@
 # coding=utf-8
 
-import inspect
-
 
 class Field(object):
 
@@ -74,7 +72,7 @@ class Item(object):
         :returns: `generator` fields generator.
         """
         for key, value in cls.__dict__.items():
-            if issubclass(value.__class__, Field):
+            if isinstance(value, Field):
                 yield {'name': key, 'field': value}
 
     @classmethod
@@ -84,7 +82,7 @@ class Item(object):
         :returns: `generator` items generator.
         """
         for key, value in cls.__dict__.items():
-            if inspect.isclass(value) and issubclass(value, Item):
+            if isinstance(value, Item):
                 yield {'name': key, 'item': value}
 
     @classmethod

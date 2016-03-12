@@ -87,7 +87,7 @@ class ItemTest(unittest.TestCase):
 
             """Links item."""
 
-            links = ItemTest.LinkItem
+            links = ItemTest.LinkItem()
         return LinksItem
 
     def test_get_fields__no_fields(self):
