@@ -10,15 +10,15 @@ class Crawler(object):
 
     """Crawler parse page use items as rules. May be nested."""
 
-    def __init__(self, url, items=None, crawlers=None, session=None):
+    def __init__(self, url=None, items=None, crawlers=None, session=None):
         """Override initialization instance.
 
-        :param url: `str` URL for page.
+        :param url (optional): `str` URL for page.
         :param items (optional): `dict` items.
         :param crawlers (optional): `dict` crawlers.
         :param session (optional): `requests.Session` instance.
         """
-        self.__url = url
+        self.__url = url or self.__class__.url
         self.__session = session or requests.Session()
 
         self.__items = self._get_class_items()
