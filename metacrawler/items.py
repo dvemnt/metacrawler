@@ -60,10 +60,10 @@ class Item(object):
     def __init__(self, fields=None, xpath='//html'):
         """Override initialization instance.
 
-        :param fields: `dict` fields.
+        :param fields (optional): `dict` fields.
         :param xpath (optional): `str` xpath for extracting blocks from page.
         """
-        self.__xpath = xpath
+        self.__xpath = xpath or self.__class__.xpath
 
         self.__fields = self._get_class_fields()
 

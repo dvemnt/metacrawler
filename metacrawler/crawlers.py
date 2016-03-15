@@ -14,7 +14,7 @@ class Crawler(object):
         """Override initialization instance.
 
         :param url: `str` URL for page.
-        :param items: `dict` items.
+        :param items (optional): `dict` items.
         :param crawlers (optional): `dict` crawlers.
         :param session (optional): `requests.Session` instance.
         """

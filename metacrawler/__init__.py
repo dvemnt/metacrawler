@@ -9,10 +9,10 @@ class Handler(object):
 
     """Handler control crawling process."""
 
-    def __init__(self, crawlers):
+    def __init__(self, crawlers=None):
         """Override initialization object.
 
-        :param crawlers: `dict` crawlers.
+        :param crawlers (optional): `dict` crawlers.
         """
         self.__crawlers = crawlers
 
