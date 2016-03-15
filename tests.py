@@ -218,6 +218,41 @@ class CrawlerTest(unittest.TestCase):
 
         self.assertEqual(data, {'links': [{'text': 'A', 'href': 'href'}]})
 
+    def test_crawler__with_class_items(self):
+        """Test crawler (with class items)."""
+        fields = {
+            'text': Field(xpath='text()'),
+            'href': Field(xpath='@href'),
+        }
+        item = Item(xpath='//a', fields=fields)
+        crawler = type(
+            'TestCrawler', (Crawler,), {'item': item}
+        )('http://test.com')
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, {'item': [{'text': 'A', 'href': 'href'}]})
+
+    def test_crawler__with_class_crawlers(self):
+        """Test crawler (with class crawlers)."""
+        fields = {
+            'text': Field(xpath='text()'),
+            'href': Field(xpath='@href'),
+        }
+        items = {'links': Item(xpath='//a', fields=fields)}
+        crawler = Crawler('http://test.com', items=items)
+        nested_crawler = type(
+            'TestCrawler', (Crawler,), {'crawler': crawler}
+        )('http://test.com')
+
+        with HTTMock(server):
+            data = nested_crawler.crawl()
+
+        self.assertEqual(
+            data, {'crawler': {'links': [{'text': 'A', 'href': 'href'}]}}
+        )
+
     def test_crawler__nested(self):
         """Test crawler (nested)."""
         fields = {

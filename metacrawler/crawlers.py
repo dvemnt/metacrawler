@@ -3,11 +3,14 @@
 import requests
 from lxml import html
 
+from metacrawler.items import Item
+
+
 class Crawler(object):
 
     """Crawler parse page use items as rules. May be nested."""
 
-    def __init__(self, url, items, crawlers=None, session=None):
+    def __init__(self, url, items=None, crawlers=None, session=None):
         """Override initialization instance.
 
         :param url: `str` URL for page.
@@ -16,9 +19,22 @@ class Crawler(object):
         :param session (optional): `requests.Session` instance.
         """
         self.__url = url
-        self.__items = items or {}
-        self.__crawlers = crawlers or {}
         self.__session = session or requests.Session()
+
+        self.__items = self._get_class_items()
+        for name, item in (items or {}).items():
+            assert isinstance(item, Item), (
+                '`items` must be `Item` instances.'
+            )
+            self.__items[name] = item
+
+        self.__crawlers = self._get_class_crawlers()
+        for name, crawler in (crawlers or {}).items():
+            assert isinstance(crawler, Crawler), (
+                '`crawler` must be `Crawler` instances.'
+            )
+            self.__crawlers[name] = crawler
+
         self.__data = {}
 
     @property
@@ -28,6 +44,32 @@ class Crawler(object):
         :returns: `list` data.
         """
         return self.__data
+
+    def _get_class_items(self):
+        """Get class items.
+
+        :returns: `dict` items.
+        """
+        items = {}
+
+        for name, attribute in self.__class__.__dict__.items():
+            if isinstance(attribute, Item):
+                items[name] = attribute
+
+        return items
+
+    def _get_class_crawlers(self):
+        """Get class crawlers.
+
+        :returns: `dict` crawlers.
+        """
+        crawlers = {}
+
+        for name, attribute in self.__class__.__dict__.items():
+            if isinstance(attribute, Crawler):
+                crawlers[name] = attribute
+
+        return crawlers
 
     def crawl(self):
         """Crawl page.
