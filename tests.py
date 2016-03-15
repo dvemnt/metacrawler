@@ -2,6 +2,7 @@
 
 import unittest
 import os
+import json
 
 from lxml import html
 from httmock import urlmatch, HTTMock
@@ -66,6 +67,13 @@ class FieldTest(unittest.TestCase):
 
         self.assertEqual(value, ['test'])
 
+    def test_parse_value__with_to_list_with_not_string(self):
+        """Test parse value by xpath."""
+        field = Field(xpath='//a', to=list)
+
+        with self.assertRaises(ValueError):
+            field.parse(self.page)
+
 
 class ItemTest(unittest.TestCase):
 
@@ -95,6 +103,12 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(data[0]['text'], 'Link')
         self.assertEqual(data[0]['href'], 'test')
+
+    def test_convert_data_to_json(self):
+        """Test convert data to json."""
+        data = self.item.parse(self.page)
+
+        json.dumps(data)
 
 
 class PaginationTest(unittest.TestCase):

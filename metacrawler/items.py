@@ -40,6 +40,12 @@ class Field(object):
                 value = value[0]
             except IndexError:
                 value = None
+        else:
+            for item in value:
+                if not isinstance(item, str):
+                    raise ValueError(
+                        'Items of iterable value must be a string.'
+                    )
 
         if value is not None and self.__postprocessing is not None:
             value = self.__postprocessing(value)
