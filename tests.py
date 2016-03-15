@@ -320,7 +320,7 @@ class HandlerTest(unittest.TestCase):
     """Test `metacrawler.Handler` class."""
 
     def test_handler(self):
-        """Test handler (with items)."""
+        """Test handler."""
         fields = {
             'text': Field(xpath='text()'),
             'href': Field(xpath='@href'),
@@ -334,4 +334,21 @@ class HandlerTest(unittest.TestCase):
 
         self.assertEqual(
             data, {'page': {'links': [{'text': 'A', 'href': 'href'}]}}
+        )
+
+    def test_handler__with_class_crawlers(self):
+        """Test handler (with class crawlers)."""
+        fields = {
+            'text': Field(xpath='text()'),
+            'href': Field(xpath='@href'),
+        }
+        items = {'links': Item(xpath='//a', fields=fields)}
+        crawler = Crawler('http://test.com', items=items)
+        handler = type('TestHandler', (Handler,), {'crawler': crawler})()
+
+        with HTTMock(server):
+            data = handler.start()
+
+        self.assertEqual(
+            data, {'crawler': {'links': [{'text': 'A', 'href': 'href'}]}}
         )
