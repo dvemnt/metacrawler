@@ -13,9 +13,14 @@
 pip install metacrawler
 ```
 
-## Usage ##
+## Quick start ##
 
-See [example](https://github.com/pyvim/metacrawler/tree/master/example).
+```bash
+metacrawler startproject example
+cd example
+python run.py
+cat output.json
+```
 
 
 ## Documentation ##
