@@ -1,4 +1,5 @@
 [report]
+omit = */template/*,commands.py
 exclude_lines =
     try:
         from urlparse import urlparse

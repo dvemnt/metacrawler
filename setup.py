@@ -11,7 +11,9 @@ VERSION = '0.0.1'
 BASE_DIR = path.abspath(path.dirname(__file__))
 
 packages = [
-    'metacrawler'
+    'metacrawler',
+    'metacrawler/template',
+    'metacrawler/template/elements'
 ]
 
 requires = [
@@ -28,6 +30,10 @@ setup(
     version=VERSION,
     packages=packages,
     install_requires=requires,
+    include_package_data=True,
+    package_data={
+        'metacrawler/template': ['*.config'],
+    },
     description='Create your own crawler.',
     long_description=long_description,
     author='Vitalii Maslov',
@@ -36,6 +42,9 @@ setup(
     download_url='https://github.com/pyvim/metacrawler/tarball/master',
     license='MIT',
     keywords='parser,crawler',
+    entry_points={
+        'console_scripts': ['metacrawler = metacrawler.commands:execute']
+    },
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
