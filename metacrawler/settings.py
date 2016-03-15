@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import configobj
+from validate import Validator
 
 
 class Settings(object):
@@ -41,7 +42,9 @@ class Settings(object):
         """
         self.__configuration = configobj.ConfigObj(
             filename, configspec=self.__configspec
-        ).dict()
+        )
+        if not self.__configuration.validate(Validator(self.__configspec)):
+            raise ValueError('Configuration file not pass validation.')
 
     def load_from_dict(self, instance):
         """

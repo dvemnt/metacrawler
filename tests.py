@@ -314,12 +314,22 @@ class SettingsTests(unittest.TestCase):
     def test_create_configuration_file(self):
         """Testing create configuration file."""
         path = 'test.conf'
-        settings = Settings(configspec=self.configspec)
+        configspec = {'test': 'string(default="proxies.txt")'}
+        settings = Settings(configspec=configspec)
         settings.create_configuration_file(path)
 
         self.assertTrue(os.path.exists(path))
         settings.load_from_file(path)
-        self.assertEqual(settings.proxy.file, 'string(default="proxies.txt")')
+        self.assertEqual(settings.test, 'string(default="proxies.txt")')
+
+    def test_from_file__error(self):
+        """Testing from file (error)."""
+        path = 'test.conf'
+        settings = Settings(configspec=self.configspec)
+        settings.create_configuration_file(path)
+
+        with self.assertRaises(ValueError):
+            settings.load_from_file(path)
 
     def test_create_settings_from_dict(self):
         """Testing create settings from dict."""
