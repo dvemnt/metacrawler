@@ -83,12 +83,24 @@ class ItemTest(unittest.TestCase):
 
     def setUp(self):
         """Setup test."""
-        fields = {
+        self.fields = {
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        self.item = Item(xpath='//a', fields=fields)
+        self.item = Item(xpath='//a', fields=self.fields)
         self.nested_item = Item(xpath='//body', fields={'links': self.item})
+
+    def test_parse__with_class_fields(self):
+        """Test parse with class fields."""
+        item = type(
+            'TestItem', (Item,),
+            {'field': self.fields['text'], 'item': self.item}
+        )()
+        data = item.parse(self.page)
+
+        self.assertEqual(data[0]['field'], 'Link')
+        self.assertEqual(data[0]['item'][0]['text'], 'Link')
+        self.assertEqual(data[0]['item'][0]['href'], 'test')
 
     def test_parse__item_with_items(self):
         """Test parse (item with items)."""

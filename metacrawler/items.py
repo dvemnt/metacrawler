@@ -57,19 +57,34 @@ class Item(object):
 
     """Item is aggregate of fields. Items can be nested."""
 
-    def __init__(self, fields, xpath='//html'):
+    def __init__(self, fields=None, xpath='//html'):
         """Override initialization instance.
 
         :param fields: `dict` fields.
         :param xpath (optional): `str` xpath for extracting blocks from page.
         """
-        for field in fields.values():
-            assert issubclass(field.__class__, (Field, Item)), (
+        self.__xpath = xpath
+
+        self.__fields = self._get_class_fields()
+
+        for name, field in (fields or {}).items():
+            assert isinstance(field, (Field, Item)), (
                 '`fields` must be `Field` or `Item` instances.'
             )
+            self.__fields[name] = field
 
-        self.__xpath = xpath
-        self.__fields = fields
+    def _get_class_fields(self):
+        """Get class fields.
+
+        :returns: `dict` fields.
+        """
+        fields = {}
+
+        for name, attribute in self.__class__.__dict__.items():
+            if isinstance(attribute, (Field, Item)):
+                fields[name] = attribute
+
+        return fields
 
     def parse(self, page):
         """Parse process.
