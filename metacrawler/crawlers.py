@@ -3,7 +3,7 @@
 import requests
 from lxml import html
 
-from metacrawler.items import Item
+from metacrawler.items import Item, Field
 
 
 class Crawler(object):
@@ -23,7 +23,7 @@ class Crawler(object):
 
         self.__items = self._get_class_items()
         for name, item in (items or {}).items():
-            assert isinstance(item, Item), (
+            assert isinstance(item, (Item, Field)), (
                 '`items` must be `Item` instances.'
             )
             self.__items[name] = item
@@ -53,7 +53,7 @@ class Crawler(object):
         items = {}
 
         for name, attribute in self.__class__.__dict__.items():
-            if isinstance(attribute, Item):
+            if isinstance(attribute, (Item, Field)):
                 items[name] = attribute
 
         return items

@@ -204,6 +204,19 @@ class CrawlerTest(unittest.TestCase):
 
     """Test `metacrawler.crawlers.Crawler` class."""
 
+    def test_crawler__with_fields(self):
+        """Test crawler (with fields)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler('http://test.com', items=fields)
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, {'text': 'A', 'href': 'href'})
+
     def test_crawler__with_items(self):
         """Test crawler (with items)."""
         fields = {
