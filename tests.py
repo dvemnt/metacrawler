@@ -342,6 +342,12 @@ class HandlerTest(unittest.TestCase):
 
     """Test `metacrawler.Handler` class."""
 
+    def test_cli(self):
+        """Test CLI."""
+        handler = Handler()
+
+        self.assertEqual(handler.cli, {})
+
     def test_handler(self):
         """Test handler."""
         fields = {

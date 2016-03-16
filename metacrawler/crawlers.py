@@ -10,15 +10,21 @@ class Crawler(object):
 
     """Crawler parse page use items as rules. May be nested."""
 
-    def __init__(self, url=None, items=None, crawlers=None, session=None):
+    def __init__(self, url=None, items=None,
+                 crawlers=None, session=None, pagination=None):
         """Override initialization instance.
 
         :param url (optional): `str` URL for page.
         :param items (optional): `dict` items.
         :param crawlers (optional): `dict` crawlers.
         :param session (optional): `requests.Session` instance.
+        :param pagination (optional): `metacrawler.pagination.Pagination`.
         """
-        self.url = url or self.__class__.url
+        self.url = url or getattr(self.__class__, 'url', None)
+        self.pagination = pagination or getattr(
+            self.__class__, 'pagination', None
+        )
+
         self.session = session or requests.Session()
 
         self.__items = self._get_class_items()
@@ -76,14 +82,24 @@ class Crawler(object):
 
         :returns: `dict` data.
         """
-        page = html.fromstring(
-            self.session.get(self.url, verify=False).content
-        )
+        while self.url:
+            page = html.fromstring(
+                self.session.get(self.url, verify=False).content
+            )
 
-        for name, item in self.__items.items():
-            self.__data[name] = item.parse(page)
+            for name, item in self.__items.items():
+                self.__data[name] = item.parse(page)
 
-        for name, crawler in self.__crawlers.items():
-            self.__data[name] = crawler.crawl()
+            for name, crawler in self.__crawlers.items():
+                self.__data[name] = crawler.crawl()
+
+            self.paginate(page)
 
         return self.data
+
+    def paginate(self, page):
+        """Paginate.
+
+        :param page: `lxml.Element` instance.
+        """
+        self.url = None

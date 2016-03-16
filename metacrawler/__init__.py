@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import copy
+import argparse
 
 import requests
 
@@ -28,10 +29,25 @@ class Handler(object):
         self.settings = getattr(self.__class__, 'settings', Settings())
         self.__data = {}
 
+        self.argparser = argparse.ArgumentParser()
+        self.set_cli_arguments()
+        self.__cli = {}
+
     @property
     def data(self):
         """The data property."""
         return copy.deepcopy(self.__data)
+
+    @property
+    def cli(self):
+        """The cli property."""
+        if not self.__cli:
+            try:
+                self.__cli = vars(self.argparser.parse_args())
+            except AttributeError:
+                pass
+
+        return copy.deepcopy(self.__cli)
 
     def _get_class_crawlers(self):
         """Get class crawlers.
@@ -45,6 +61,10 @@ class Handler(object):
                 crawlers[name] = attribute
 
         return crawlers
+
+    def set_cli_arguments(self):
+        """Set CLI arguments."""
+        self.argparser = None
 
     def before(self):
         """Any actions before start."""
