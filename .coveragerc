@@ -1,5 +1,7 @@
 [report]
-omit = */template/*,commands.py
+omit =
+    *metacralwer/template/*
+    *metacrawler/commands.py
 exclude_lines =
     try:
         from urlparse import urlparse

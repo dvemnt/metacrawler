@@ -18,8 +18,8 @@ class Crawler(object):
         :param crawlers (optional): `dict` crawlers.
         :param session (optional): `requests.Session` instance.
         """
-        self.__url = url or self.__class__.url
-        self.__session = session or requests.Session()
+        self.url = url or self.__class__.url
+        self.session = session or requests.Session()
 
         self.__items = self._get_class_items()
         for name, item in (items or {}).items():
@@ -77,7 +77,7 @@ class Crawler(object):
         :returns: `dict` data.
         """
         page = html.fromstring(
-            self.__session.get(self.__url, verify=False).content
+            self.session.get(self.url, verify=False).content
         )
 
         for name, item in self.__items.items():
