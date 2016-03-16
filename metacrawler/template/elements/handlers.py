@@ -1,13 +1,20 @@
 # coding=utf-8
 
-from metacrawler import Handler
+from metacrawler.handlers import Handler
 
-from . import crawlers
-from settings import settings
+from . import crawlers, constants
+from .settings import CustomSettings
 
 
-class YourHandler(Handler):
+class CustomHandler(Handler):
 
-    settings = settings
+    settings = CustomSettings.load_from_file(constants.SETTINGS_PATH)
 
-    your_crawler = crawlers.YourCrawler('https://github.com')
+    index = crawlers.IndexCrawler()
+
+    def set_cli_arguments(self):
+        self.argparser.add_argument('url')
+
+    def before(self):
+        self.index.url = self.cli['url']
+        self.session.headers.update({'User-Agent': self.settings.user_agent})

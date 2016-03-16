@@ -1,10 +1,12 @@
 # coding=utf-8
 
 from metacrawler.crawlers import Crawler
+from metacrawler.fields import Field
 
-from . import items
+from . import fields
 
 
-class YourCrawler(Crawler):
+class IndexCrawler(Crawler):
 
-    your_item = items.YourItem()
+    header = fields.HeaderField()
+    first_link_text = Field(xpath='//a/text()')

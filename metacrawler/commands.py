@@ -2,7 +2,7 @@
 
 import os
 import argparse
-from shutil import copytree
+from distutils.dir_util import copy_tree
 
 import metacrawler
 
@@ -24,4 +24,4 @@ def execute(*args, **kwargs):
 def start_project(kwargs):
     """Action."""
     template_path = os.path.join(metacrawler.__path__[0], 'template')
-    copytree(template_path, kwargs['path'])
+    copy_tree(template_path, kwargs['path'], update=1)

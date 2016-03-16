@@ -2,11 +2,10 @@
 
 import json
 
-from elements.handlers import YourHandler
+from elements.handlers import CustomHandler
 
 if __name__ == '__main__':
-    YourHandler.settings.load_from_file('settings.config')
-    data = YourHandler().start()
+    data = CustomHandler().start()
 
     with open('output.json', 'w') as f:
-        f.write(json.dumps(data, indent=4))
+        f.write(json.dumps(data, indent=4, ensure_ascii=False))

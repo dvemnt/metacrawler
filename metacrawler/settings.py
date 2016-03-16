@@ -14,7 +14,9 @@ class Settings(object):
         :param configspec (optional): `dict` configspec for read from file.
         :param configuration (optional): `dict` configuration.
         """
-        self.__configspec = configspec
+        self.__configspec = (
+            configspec or getattr(self.__class__, 'configspec', None)
+        )
         self.__configuration = configuration
 
     def __getattr__(self, attribute):
@@ -33,34 +35,29 @@ class Settings(object):
             return self.__class__(configuration=value)
         return value
 
-    def load_from_file(self, filename):
+    @classmethod
+    def load_from_file(cls, filename):
         """
         Load settings from configuration file.
 
         :param filename: `str` configuration filename.
         :returns: `dict` of settings.
         """
-        self.__configuration = configobj.ConfigObj(
-            filename, configspec=self.__configspec
+        configuration = configobj.ConfigObj(
+            filename, configspec=cls.configspec
         )
-        if not self.__configuration.validate(Validator(self.__configspec)):
+        if not configuration.validate(Validator(cls.configspec)):
             raise ValueError('Configuration file not pass validation.')
 
-    def load_from_dict(self, instance):
-        """
-        Load settings from `dict`.
+        return cls(configuration=configuration)
 
-        :param instance: `dict` settings.
-        :returns: `dict` of settings.
-        """
-        self.__configuration = instance
-
-    def create_configuration_file(self, filename):
+    @classmethod
+    def create_configuration_file(cls, filename):
         """
         Create configuration file.
 
         :param filename: `str` path to write configuration.
         """
         config = configobj.ConfigObj(infile=filename)
-        config.update(self.__configspec)
+        config.update(cls.configspec)
         config.write()

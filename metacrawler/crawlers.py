@@ -3,20 +3,18 @@
 import requests
 from lxml import html
 
-from metacrawler.items import Item, Field
+from metacrawler.fields import Field
 
 
 class Crawler(object):
 
     """Crawler parse page use items as rules. May be nested."""
 
-    def __init__(self, url=None, items=None,
-                 crawlers=None, session=None, pagination=None):
+    def __init__(self, url=None, fields=None, session=None, pagination=None):
         """Override initialization instance.
 
         :param url (optional): `str` URL for page.
-        :param items (optional): `dict` items.
-        :param crawlers (optional): `dict` crawlers.
+        :param fields (optional): `dict` fields.
         :param session (optional): `requests.Session` instance.
         :param pagination (optional): `metacrawler.pagination.Pagination`.
         """
@@ -27,19 +25,7 @@ class Crawler(object):
 
         self.session = session or requests.Session()
 
-        self.__items = self._get_class_items()
-        for name, item in (items or {}).items():
-            assert isinstance(item, (Item, Field)), (
-                '`items` must be `Item` instances.'
-            )
-            self.__items[name] = item
-
-        self.__crawlers = self._get_class_crawlers()
-        for name, crawler in (crawlers or {}).items():
-            assert isinstance(crawler, Crawler), (
-                '`crawler` must be `Crawler` instances.'
-            )
-            self.__crawlers[name] = crawler
+        self.__fields = self._get_fields(fields or {})
 
         self.__data = {}
 
@@ -51,47 +37,39 @@ class Crawler(object):
         """
         return self.__data
 
-    def _get_class_items(self):
-        """Get class items.
+    def _get_fields(self, passed_fields):
+        """Get fields.
 
-        :returns: `dict` items.
+        :param passed_fields: `dict` passed fields.
+        :returns: `dict` fields.
         """
-        items = {}
+        passed_fields.update(self.__class__.__dict__)
+        fields = {}
 
-        for name, attribute in self.__class__.__dict__.items():
-            if isinstance(attribute, (Item, Field)):
-                items[name] = attribute
+        for name, attribute in passed_fields.items():
+            if isinstance(attribute, (Field, Crawler)):
+                fields[name] = attribute
 
-        return items
+        return fields
 
-    def _get_class_crawlers(self):
-        """Get class crawlers.
+    def before(self):
+        """Any actions before crawl."""
+        pass
 
-        :returns: `dict` crawlers.
-        """
-        crawlers = {}
-
-        for name, attribute in self.__class__.__dict__.items():
-            if isinstance(attribute, Crawler):
-                crawlers[name] = attribute
-
-        return crawlers
-
-    def crawl(self):
+    def crawl(self, *args, **kwargs):
         """Crawl page.
 
         :returns: `dict` data.
         """
+        self.before()
+
         while self.url:
             page = html.fromstring(
                 self.session.get(self.url, verify=False).content
             )
 
-            for name, item in self.__items.items():
-                self.__data[name] = item.parse(page)
-
-            for name, crawler in self.__crawlers.items():
-                self.__data[name] = crawler.crawl()
+            for name, field in self.__fields.items():
+                self.__data[name] = field.crawl(page)
 
             self.paginate(page)
 

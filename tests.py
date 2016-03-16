@@ -2,13 +2,12 @@
 
 import unittest
 import os
-import json
 
 from lxml import html
 from httmock import urlmatch, HTTMock
 
-from metacrawler import Handler
-from metacrawler.items import Field, Item
+from metacrawler.handlers import Handler
+from metacrawler.fields import Field
 from metacrawler.crawlers import Crawler
 from metacrawler.pagination import Pagination
 from metacrawler.settings import Settings
@@ -25,102 +24,90 @@ class FieldTest(unittest.TestCase):
 
     page = html.fromstring('<html><body><a href="test">Link</a></body></html>')
 
-    def test_parse_value__error(self):
-        """Test error parse value."""
+    def test_crawl_value__error(self):
+        """Test error crawl value."""
         field = Field()
 
         with self.assertRaises(AttributeError):
-            field.parse(self.page)
+            field.crawl(self.page)
 
-    def test_parse_value__not_found(self):
-        """Test error parse value."""
+    def test_crawl_value__not_found(self):
+        """Test error crawl value."""
         field = Field(xpath='//a/@id')
-        value = field.parse(self.page)
+        value = field.crawl(self.page)
 
         self.assertEqual(value, None)
 
-    def test_parse_value__by_xpath(self):
-        """Test parse value by xpath."""
+    def test_crawl_value__by_xpath(self):
+        """Test crawl value by xpath."""
         field = Field(xpath='//a/@href')
-        value = field.parse(self.page)
+        value = field.crawl(self.page)
 
         self.assertEqual(value, 'test')
 
-    def test_parse_value__by_function(self):
-        """Test parse value by function."""
-        field = Field(function=lambda x: x.xpath('//a/@href'))
-        value = field.parse(self.page)
-
-        self.assertEqual(value, 'test')
-
-    def test_parse_value__with_postprocessing(self):
-        """Test parse value with postprocessing."""
+    def test_crawl_value__with_postprocessing(self):
+        """Test crawl value with postprocessing."""
         field = Field(xpath='//a/@href', postprocessing=lambda x: x[:2])
-        value = field.parse(self.page)
+        value = field.crawl(self.page)
 
         self.assertEqual(value, 'te')
 
-    def test_parse_value__with_to_list(self):
-        """Test parse value by xpath."""
+    def test_crawl_value__with_to_list(self):
+        """Test crawl value by xpath."""
         field = Field(xpath='//a/@href', to=list)
-        value = field.parse(self.page)
+        value = field.crawl(self.page)
 
         self.assertEqual(value, ['test'])
 
-    def test_parse_value__with_to_list_with_not_string(self):
-        """Test parse value by xpath."""
+    def test_crawl_value__with_to_list_with_not_string(self):
+        """Test crawl value by xpath."""
         field = Field(xpath='//a', to=list)
 
         with self.assertRaises(ValueError):
-            field.parse(self.page)
+            field.crawl(self.page)
 
+    def test_nested_fields_error(self):
+        """Test nested fields list."""
+        field = Field(xpath='text()')
+        nested_field = Field(xpath='//a', fields={'text': field})
 
-class ItemTest(unittest.TestCase):
+        with self.assertRaises(ValueError):
+            nested_field.crawl(self.page)
 
-    """Test `metacrawler.Item` class."""
+    def test_nested_fields_list(self):
+        """Test nested fields list."""
+        field = Field(xpath='text()')
+        nested_field = Field(xpath='//a', to=list, fields={'text': field})
 
-    page = html.fromstring('<html><body><a href="test">Link</a></body></html>')
+        value = nested_field.crawl(self.page)
 
-    def setUp(self):
-        """Setup test."""
-        self.fields = {
-            'text': Field(xpath='//a/text()'),
-            'href': Field(xpath='//a/@href'),
-        }
-        self.item = Item(xpath='//a', fields=self.fields)
-        self.nested_item = Item(xpath='//body', fields={'links': self.item})
+        self.assertEqual(value, [{'text': 'Link'}])
 
-    def test_parse__with_class_fields(self):
-        """Test parse with class fields."""
-        item = type(
-            'TestItem', (Item,),
-            {'field': self.fields['text'], 'item': self.item}
-        )()
-        data = item.parse(self.page)
+    def test_nested_fields_list_error(self):
+        """Test nested fields list."""
+        field = Field(xpath='text()')
+        nested_field = Field(to=list, fields={'text': field})
 
-        self.assertEqual(data[0]['field'], 'Link')
-        self.assertEqual(data[0]['item'][0]['text'], 'Link')
-        self.assertEqual(data[0]['item'][0]['href'], 'test')
+        with self.assertRaises(AttributeError):
+            nested_field.crawl(self.page)
 
-    def test_parse__item_with_items(self):
-        """Test parse (item with items)."""
-        data = self.nested_item.parse(self.page)
+    def test_nested_fields_dict(self):
+        """Test nested fields list."""
+        field = Field(xpath='//a/text()')
+        nested_field = Field(to=dict, fields={'text': field})
 
-        self.assertEqual(data[0]['links'][0]['text'], 'Link')
-        self.assertEqual(data[0]['links'][0]['href'], 'test')
+        value = nested_field.crawl(self.page)
 
-    def test_parse(self):
-        """Test parse."""
-        data = self.item.parse(self.page)
+        self.assertEqual(value, {'text': 'Link'})
 
-        self.assertEqual(data[0]['text'], 'Link')
-        self.assertEqual(data[0]['href'], 'test')
+    def test_nested_fields_dict_error(self):
+        """Test nested fields list (error)."""
+        field = Field(xpath='//a/@test')
+        nested_field = Field(xpath='//test', to=dict, fields={'text': field})
 
-    def test_convert_data_to_json(self):
-        """Test convert data to json."""
-        data = self.item.parse(self.page)
+        value = nested_field.crawl(self.page)
 
-        json.dumps(data)
+        self.assertEqual(value, {'text': None})
 
 
 class PaginationTest(unittest.TestCase):
@@ -210,51 +197,32 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', items=fields)
+        crawler = Crawler('http://test.com', fields=fields)
 
         with HTTMock(server):
             data = crawler.crawl()
 
         self.assertEqual(data, {'text': 'A', 'href': 'href'})
 
-    def test_crawler__with_items(self):
-        """Test crawler (with items)."""
-        fields = {
-            'text': Field(xpath='text()'),
-            'href': Field(xpath='@href'),
-        }
-        items = {'links': Item(xpath='//a', fields=fields)}
-        crawler = Crawler('http://test.com', items=items)
-
-        with HTTMock(server):
-            data = crawler.crawl()
-
-        self.assertEqual(data, {'links': [{'text': 'A', 'href': 'href'}]})
-
-    def test_crawler__with_class_items(self):
+    def test_crawler__with_class_fields(self):
         """Test crawler (with class items)."""
-        fields = {
-            'text': Field(xpath='text()'),
-            'href': Field(xpath='@href'),
-        }
-        item = Item(xpath='//a', fields=fields)
+        field = Field(xpath='//a/text()')
         crawler = type(
-            'TestCrawler', (Crawler,), {'item': item}
+            'TestCrawler', (Crawler,), {'field': field}
         )('http://test.com')
 
         with HTTMock(server):
             data = crawler.crawl()
 
-        self.assertEqual(data, {'item': [{'text': 'A', 'href': 'href'}]})
+        self.assertEqual(data, {'field': 'A'})
 
     def test_crawler__with_class_crawlers(self):
         """Test crawler (with class crawlers)."""
         fields = {
-            'text': Field(xpath='text()'),
-            'href': Field(xpath='@href'),
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
         }
-        items = {'links': Item(xpath='//a', fields=fields)}
-        crawler = Crawler('http://test.com', items=items)
+        crawler = Crawler('http://test.com', fields=fields)
         nested_crawler = type(
             'TestCrawler', (Crawler,), {'crawler': crawler}
         )('http://test.com')
@@ -262,33 +230,22 @@ class CrawlerTest(unittest.TestCase):
         with HTTMock(server):
             data = nested_crawler.crawl()
 
-        self.assertEqual(
-            data, {'crawler': {'links': [{'text': 'A', 'href': 'href'}]}}
-        )
+        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
 
     def test_crawler__nested(self):
         """Test crawler (nested)."""
         fields = {
-            'text': Field(xpath='text()'),
-            'href': Field(xpath='@href'),
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
         }
-        items = {'links': Item(xpath='//a', fields=fields)}
-        crawler = Crawler('http://test.com', items=items)
+        crawler = Crawler('http://test.com', fields=fields)
         crawlers = {'friends': crawler}
-        nested_crawler = Crawler(
-            'http://test.com', items=items, crawlers=crawlers
-        )
+        nested_crawler = Crawler('http://test.com', fields=crawlers)
 
         with HTTMock(server):
             data = nested_crawler.crawl()
 
-        self.assertEqual(
-            data,
-            {
-                'friends': {'links': [{'text': 'A', 'href': 'href'}]},
-                'links': [{'text': 'A', 'href': 'href'}]
-            }
-        )
+        self.assertEqual(data, {'friends': {'text': 'A', 'href': 'href'}})
 
 
 class SettingsTests(unittest.TestCase):
@@ -315,27 +272,33 @@ class SettingsTests(unittest.TestCase):
         """Testing create configuration file."""
         path = 'test.conf'
         configspec = {'test': 'string(default="proxies.txt")'}
-        settings = Settings(configspec=configspec)
-        settings.create_configuration_file(path)
+        settings_class = type(
+            'TestSettings', (Settings,), {'configspec': configspec}
+        )
+        settings_class.create_configuration_file(path)
 
         self.assertTrue(os.path.exists(path))
-        settings.load_from_file(path)
+        settings = settings_class.load_from_file(path)
         self.assertEqual(settings.test, 'string(default="proxies.txt")')
 
     def test_from_file__error(self):
         """Testing from file (error)."""
         path = 'test.conf'
-        settings = Settings(configspec=self.configspec)
-        settings.create_configuration_file(path)
+        settings_class = type(
+            'TestSettings', (Settings,), {'configspec': self.configspec}
+        )
+        settings_class.create_configuration_file(path)
 
         with self.assertRaises(ValueError):
-            settings.load_from_file(path)
+            settings_class.load_from_file(path)
 
-    def test_create_settings_from_dict(self):
-        """Testing create settings from dict."""
-        settings = Settings()
-        settings.load_from_dict(self.configspec)
-        self.assertEqual(settings.proxy.file, 'string(default="proxies.txt")')
+    def test_get_nested_settings(self):
+        """Test get nested settings."""
+        settings = Settings(configuration=self.configspec)
+
+        self.assertEqual(
+            settings.proxy.enabled, self.configspec['proxy']['enabled']
+        )
 
 
 class HandlerTest(unittest.TestCase):
@@ -351,33 +314,27 @@ class HandlerTest(unittest.TestCase):
     def test_handler(self):
         """Test handler."""
         fields = {
-            'text': Field(xpath='text()'),
-            'href': Field(xpath='@href'),
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
         }
-        items = {'links': Item(xpath='//a', fields=fields)}
-        crawler = Crawler('http://test.com', items=items)
+        crawler = Crawler('http://test.com', fields=fields)
         handler = Handler({'page': crawler})
 
         with HTTMock(server):
             data = handler.start()
 
-        self.assertEqual(
-            data, {'page': {'links': [{'text': 'A', 'href': 'href'}]}}
-        )
+        self.assertEqual(data, {'page': {'text': 'A', 'href': 'href'}})
 
     def test_handler__with_class_crawlers(self):
         """Test handler (with class crawlers)."""
         fields = {
-            'text': Field(xpath='text()'),
-            'href': Field(xpath='@href'),
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
         }
-        items = {'links': Item(xpath='//a', fields=fields)}
-        crawler = Crawler('http://test.com', items=items)
+        crawler = Crawler('http://test.com', fields=fields)
         handler = type('TestHandler', (Handler,), {'crawler': crawler})()
 
         with HTTMock(server):
             data = handler.start()
 
-        self.assertEqual(
-            data, {'crawler': {'links': [{'text': 'A', 'href': 'href'}]}}
-        )
+        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
