@@ -2,6 +2,7 @@
 
 import copy
 import argparse
+import json
 
 import requests
 
@@ -25,6 +26,9 @@ class Handler(object):
         self.__data = {}
 
         self.argparser = argparse.ArgumentParser()
+        self.argparser.add_argument(
+            '-o', '--output', default='output.json', help='Output file.'
+        )
         self.set_cli_arguments()
         self.__cli = {}
 
@@ -37,10 +41,7 @@ class Handler(object):
     def cli(self):
         """The cli property."""
         if not self.__cli:
-            try:
-                self.__cli = vars(self.argparser.parse_args())
-            except AttributeError:
-                pass
+            self.__cli = vars(self.argparser.parse_args())
 
         return copy.deepcopy(self.__cli)
 
@@ -61,7 +62,7 @@ class Handler(object):
 
     def set_cli_arguments(self):
         """Set CLI arguments."""
-        self.argparser = None
+        pass
 
     def before(self):
         """Any actions before start."""
@@ -75,3 +76,16 @@ class Handler(object):
             self.__data[name] = crawler.crawl()
 
         return self.data
+
+    def output(self, compact=False):
+        """Output to file.
+
+        :param compact (optional): `bool` compact output.
+        """
+        if compact:
+            data = json.dumps(self.data, ensure_ascii=False)
+        else:
+            data = json.dumps(self.data, indent=4, ensure_ascii=False)
+
+        with open(self.cli['output'], 'w') as f:
+            f.write(data)

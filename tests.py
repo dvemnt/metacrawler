@@ -2,6 +2,7 @@
 
 import unittest
 import os
+import sys
 
 from lxml import html
 from httmock import urlmatch, HTTMock
@@ -308,8 +309,46 @@ class HandlerTest(unittest.TestCase):
     def test_cli(self):
         """Test CLI."""
         handler = Handler()
+        handler.argparser.add_argument('test')
+        sys.argv = ['run.py', 'test']
 
-        self.assertEqual(handler.cli, {})
+        self.assertEqual(handler.cli['output'], 'output.json')
+
+    def test_output(self):
+        """Test output."""
+        sys.argv = ['run.py', 'test']
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler('http://test.com', fields=fields)
+        handler = Handler({'page': crawler})
+        handler.argparser.add_argument('test')
+
+        with HTTMock(server):
+            handler.start()
+            handler.output()
+
+        self.assertTrue(os.path.exists('output.json'))
+        os.remove('output.json')
+
+    def test_output__compact(self):
+        """Test output (compact)."""
+        sys.argv = ['run.py', 'test']
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler('http://test.com', fields=fields)
+        handler = Handler({'page': crawler})
+        handler.argparser.add_argument('test')
+
+        with HTTMock(server):
+            handler.start()
+            handler.output(compact=True)
+
+        self.assertTrue(os.path.exists('output.json'))
+        os.remove('output.json')
 
     def test_handler(self):
         """Test handler."""
