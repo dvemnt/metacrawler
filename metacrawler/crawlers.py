@@ -10,11 +10,13 @@ class Crawler(object):
 
     """Crawler parse page use items as rules. May be nested."""
 
-    def __init__(self, url=None, fields=None, session=None, pagination=None):
+    def __init__(self, url=None, fields=None,
+                 collapse=False, session=None, pagination=None):
         """Override initialization instance.
 
         :param url (optional): `str` URL for page.
         :param fields (optional): `dict` fields.
+        :param collapse (optional): `bool` collapse one field to upper level.
         :param session (optional): `requests.Session` instance.
         :param pagination (optional): `metacrawler.pagination.Pagination`.
         """
@@ -22,12 +24,18 @@ class Crawler(object):
         self.pagination = pagination or getattr(
             self.__class__, 'pagination', None
         )
+        self.collapse = collapse or getattr(self.__class__, 'collapse', None)
 
         self.session = session or requests.Session()
 
         self.__fields = self._get_fields(fields or {})
 
-        self.__data = {}
+        if len(self.__fields) > 1 and self.collapse:
+            raise ValueError(
+                'Must not use `collapse` with few fields or/and crawlers.'
+            )
+
+        self.__data = [] if self.pagination else {}
 
     @property
     def data(self):
@@ -62,16 +70,31 @@ class Crawler(object):
         :returns: `dict` data.
         """
         self.before()
+        data = []
 
         while self.url:
             page = html.fromstring(
                 self.session.get(self.url, verify=False).content
             )
+            page_data = {}
 
             for name, field in self.__fields.items():
-                self.__data[name] = field.crawl(page)
+                page_data[name] = field.crawl(page)
+
+                if self.collapse:
+                    collapse_field = name
+
+            if self.collapse:
+                data.append(page_data[collapse_field])
+            else:
+                data.append(page_data)
 
             self.paginate(page)
+
+        if self.pagination:
+            self.__data.extend(data)
+        else:
+            self.__data = data[0]
 
         return self.data
 

@@ -248,6 +248,48 @@ class CrawlerTest(unittest.TestCase):
 
         self.assertEqual(data, {'friends': {'text': 'A', 'href': 'href'}})
 
+    def test_crawler_collapse__error(self):
+        """Test crawler collapse (error)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+
+        with self.assertRaises(ValueError):
+            Crawler('http://test.com', fields=fields, collapse=True)
+
+    def test_crawler_collapse(self):
+        """Test crawler collapse."""
+        fields = {'text': Field(xpath='//a/text()')}
+        crawler = Crawler('http://test.com', fields=fields, collapse=True)
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, 'A')
+
+    def test_crawler_pagination(self):
+        """Test crawler pagination."""
+        fields = {'text': Field(xpath='//a/text()')}
+        crawler = Crawler('http://test.com', fields=fields, pagination=True)
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, [{'text': 'A'}])
+
+    def test_crawler_pagination_with_collapse(self):
+        """Test crawler pagination."""
+        fields = {'text': Field(xpath='//a/text()')}
+        crawler = Crawler(
+            'http://test.com', fields=fields, pagination=True, collapse=True
+        )
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, ['A'])
+
 
 class SettingsTests(unittest.TestCase):
 
