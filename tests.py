@@ -25,6 +25,14 @@ class FieldTest(unittest.TestCase):
 
     page = html.fromstring('<html><body><a href="test">Link</a></body></html>')
 
+    def test_field_value_cap(self):
+        """Test field value cap."""
+        field = Field(value='value')
+
+        value = field.crawl(self.page)
+
+        self.assertEqual(value, 'value')
+
     def test_crawl_value__error(self):
         """Test error crawl value."""
         field = Field()

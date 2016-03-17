@@ -9,14 +9,17 @@ class Field(object):
     May be nested.
     """
 
-    def __init__(self, xpath=None, fields=None, postprocessing=None, to=str):
+    def __init__(self, value=None, xpath=None,
+                 fields=None, postprocessing=None, to=str):
         """Override initialization instance.
 
+        :param value (optional): value cap.
         :param xpath (optional): `str` xpath for extracting value from page.
         :param fields (optional): `dict` fields.
         :param postprocessing (optional): `function` postprocessing function.
         :param to (optional): `type` to representation as.
         """
+        self.value = value or getattr(self.__class__, 'value', None)
         self.xpath = xpath or getattr(self.__class__, 'xpath', None)
         self.postprocessing = (
             postprocessing or getattr(self.__class__, 'postprocessing', None)
@@ -58,7 +61,9 @@ class Field(object):
         """
         self.before()
 
-        if self.__fields:
+        if self.value:
+            return self.value
+        elif self.__fields:
             value = self.crawl_subfields(page)
         elif self.xpath is not None:
             value = page.xpath(self.xpath)
