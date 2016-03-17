@@ -1,5 +1,7 @@
 # coding=utf-8
 
+AVAILABLE_TYPES = [list, dict, int, float, str]
+
 
 class Field(object):
 
@@ -20,6 +22,12 @@ class Field(object):
             postprocessing or getattr(self.__class__, 'postprocessing', None)
         )
         self.to = getattr(self.__class__, 'to', to)
+
+        assert self.to in AVAILABLE_TYPES, (
+            '`to` must be one of next types: {}'.format(
+                ', '.join(AVAILABLE_TYPES)
+            )
+        )
 
         self.__fields = self._get_fields(fields or {})
 
@@ -55,7 +63,7 @@ class Field(object):
         elif self.xpath is not None:
             value = page.xpath(self.xpath)
 
-            if self.to not in (list, tuple):
+            if self.to is not list:
                 try:
                     value = self.to(value[0])
                 except IndexError:
@@ -66,7 +74,7 @@ class Field(object):
                         raise ValueError(
                             'Items of iterable value must be a string.'
                         )
-                value = self.to(value)
+                value = list(value)
         else:
             raise AttributeError(
                 'Cannot call `.search()` as no `value=`, `xpath=` or '
@@ -96,7 +104,7 @@ class Field(object):
 
             for name, field in self.__fields.items():
                 value[name] = field.crawl(page)
-        elif self.to in (list, tuple):
+        elif self.to is list:
             value = []
 
             if not self.xpath:
@@ -109,8 +117,6 @@ class Field(object):
                 for name, field in self.__fields.items():
                     block_fields[name] = field.crawl(block)
                 value.append(block_fields)
-
-            value = self.to(value)
         else:
             raise ValueError(
                 'For nested fields keyword argument `to=` '

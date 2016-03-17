@@ -268,10 +268,23 @@ class CrawlerTest(unittest.TestCase):
 
         self.assertEqual(data, 'A')
 
+    def test_crawler_collapse__list(self):
+        """Test crawler collapse (list)."""
+        fields = {'text': Field(xpath='//a/text()', to=list)}
+        crawler = Crawler('http://test.com', fields=fields, collapse=True)
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, 'A')
+
     def test_crawler_pagination(self):
         """Test crawler pagination."""
+        pagination = Pagination(xpath='//a/@test', host='http://test.com')
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler('http://test.com', fields=fields, pagination=True)
+        crawler = Crawler(
+            'http://test.com', fields=fields, pagination=pagination
+        )
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -280,9 +293,11 @@ class CrawlerTest(unittest.TestCase):
 
     def test_crawler_pagination_with_collapse(self):
         """Test crawler pagination."""
+        pagination = Pagination(xpath='//a/@test', host='http://test.com')
         fields = {'text': Field(xpath='//a/text()')}
         crawler = Crawler(
-            'http://test.com', fields=fields, pagination=True, collapse=True
+            'http://test.com', fields=fields, pagination=pagination,
+            collapse=True
         )
 
         with HTTMock(server):

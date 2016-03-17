@@ -85,7 +85,10 @@ class Crawler(object):
                     collapse_field = name
 
             if self.collapse:
-                data.append(page_data[collapse_field])
+                if self.__fields[collapse_field].to is list:
+                    data.extend(page_data[collapse_field])
+                else:
+                    data.append(page_data[collapse_field])
             else:
                 data.append(page_data)
 
@@ -103,4 +106,7 @@ class Crawler(object):
 
         :param page: `lxml.Element` instance.
         """
-        self.url = None
+        if self.pagination:
+            self.url = self.pagination.next(page)
+        else:
+            self.url = None
