@@ -11,7 +11,7 @@ class Crawler(object):
     """Crawler parse page use items as rules. May be nested."""
 
     def __init__(self, url=None, fields=None,
-                 collapse=False, session=None, pagination=None):
+                 collapse=False, session=None, pagination=None, limit=None):
         """Override initialization instance.
 
         :param url (optional): `str` URL for page.
@@ -19,12 +19,18 @@ class Crawler(object):
         :param collapse (optional): `bool` collapse one field to upper level.
         :param session (optional): `requests.Session` instance.
         :param pagination (optional): `metacrawler.pagination.Pagination`.
+        :param limit (optional): `int` limit.
         """
         self.url = url or getattr(self.__class__, 'url', None)
         self.pagination = pagination or getattr(
             self.__class__, 'pagination', None
         )
         self.collapse = collapse or getattr(self.__class__, 'collapse', None)
+
+        if limit is not None:
+            self.limit = limit
+        else:
+            self.limit = getattr(self.__class__, 'limit', None)
 
         self.session = session or requests.Session()
 
@@ -73,6 +79,9 @@ class Crawler(object):
         data = []
 
         while self.url:
+            if self.limit is not None and int(self.limit) <= len(data):
+                break
+
             page = html.fromstring(
                 self.session.get(self.url, verify=False).content
             )

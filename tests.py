@@ -299,6 +299,20 @@ class CrawlerTest(unittest.TestCase):
 
         self.assertEqual(data, [{'text': 'A'}])
 
+    def test_crawler_pagination_with_limit(self):
+        """Test crawler pagination with limit."""
+        pagination = Pagination(xpath='//a/@test', host='http://test.com')
+        fields = {'text': Field(xpath='//a/text()')}
+        crawler = Crawler(
+            'http://test.com', fields=fields, pagination=pagination, limit=0
+        )
+        print(crawler.limit)
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, [])
+
     def test_crawler_pagination_with_collapse(self):
         """Test crawler pagination."""
         pagination = Pagination(xpath='//a/@test', host='http://test.com')
