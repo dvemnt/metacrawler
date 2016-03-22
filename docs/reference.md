@@ -18,4 +18,4 @@ For successfully crawling need define all elements.
 
 ## Example usage ##
 
-See [example on Github](https://github.com/pyvim/metacrawler/tree/master/example).
+See [example on Github](https://github.com/pyvim/metacrawler/tree/master/metacrawler/template).
