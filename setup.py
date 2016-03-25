@@ -19,7 +19,7 @@ packages = [
 requires = [
     'configobj',
     'lxml',
-    'requests',
+    'grequests'
 ]
 
 with open(path.join(BASE_DIR, 'README.rst')) as f:
