@@ -1,5 +1,6 @@
 *.py[codw]
 *.log
+*.json
 local*
 
 .coverage

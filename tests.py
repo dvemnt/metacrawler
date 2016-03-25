@@ -7,6 +7,7 @@ import sys
 from lxml import html
 from httmock import urlmatch, HTTMock
 
+from metacrawler.base import Element
 from metacrawler.handlers import Handler
 from metacrawler.fields import Field
 from metacrawler.crawlers import Crawler
@@ -19,9 +20,31 @@ def server(*args, **kwargs):
     return '<html><body><a id="id" href="href">A</a></body></html>'
 
 
+class ElementTest(unittest.TestCase):
+
+    """Test `metacrawler.base.Element` class."""
+
+    def test_get_attributes(self):
+        """Test get attributes."""
+        element_class = type('TestElement', (Element,), {})
+        element_class.get_value = lambda self: 'value'
+        element = element_class()
+
+        self.assertEqual(element.value, 'value')
+
+    def test_get_attributes__not_function(self):
+        """Test get attributes (not function)."""
+        element_class = type('TestElement', (Element,), {})
+        element_class.get_value = None
+        element = element_class()
+
+        with self.assertRaises(AttributeError):
+            __ = element.value
+
+
 class FieldTest(unittest.TestCase):
 
-    """Test `metacrawler.Field` class."""
+    """Test `metacrawler.fields.Field` class."""
 
     page = html.fromstring('<html><body><a href="test">Link</a></body></html>')
 
@@ -148,57 +171,54 @@ class PaginationTest(unittest.TestCase):
 
         self.assertEqual(url, 'http://host/test')
 
-    def test_pagination__by_function_list(self):
-        """Test pagination by list function."""
-        def paginate(*args, **kwargs):
-            """Simple pagination iterable function."""
-            return ['http://host/test']
-
-        pagination = Pagination(function=paginate)
-
-        for url in pagination:
-            self.assertEqual(url, 'http://host/test')
-
-    def test_pagination__by_not_iterable_function(self):
-        """Test pagination by not iterable function."""
-        def paginate(*args, **kwargs):
-            """Simple pagination iterable function."""
-            return 0
-
-        pagination = Pagination(function=paginate)
-
-        for url in pagination:
-            self.assertEqual(url, 0)
-
-    def test_pagination__by_function(self):
-        """Test pagination by function."""
-        def paginate(page=None):
-            """Simple pagination iterable function."""
-            return 'http://host' + page.xpath('//a/@href')[0]
-
-        pagination = Pagination(function=paginate)
+    def test_pagination__urls_out_of_range(self):
+        """Test pagination by xpath."""
+        pagination = Pagination(urls=['test'])
 
         url = pagination.next(self.page)
+        url = pagination.next(self.page)
 
-        self.assertEqual(url, 'http://host/test')
-
-    def test_pagination__by_iterable_function(self):
-        """Test pagination by iterable function."""
-        def paginate(*args, **kwargs):
-            """Simple pagination iterable function."""
-            url = 'http://host/test'
-            for i in range(5):
-                yield url + '?page={}'.format(i)
-
-        pagination = Pagination(function=paginate)
-
-        for i, url in enumerate(pagination):
-            self.assertEqual(url, 'http://host/test?page={}'.format(i))
+        self.assertEqual(url, None)
 
 
 class CrawlerTest(unittest.TestCase):
 
     """Test `metacrawler.crawlers.Crawler` class."""
+
+    def test_crawler__without_fields(self):
+        """Test crawler (without fields)."""
+        with self.assertRaises(ValueError):
+            Crawler('http://test.com', fields={})
+
+    def test_crawler__get_url(self):
+        """Test crawler (get url)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler(fields=fields)
+
+        self.assertEqual(crawler.url, None)
+
+    def test_crawler__get_collapse(self):
+        """Test crawler (get collapse)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler(fields=fields)
+
+        self.assertFalse(crawler.collapse)
+
+    def test_crawler__get_session(self):
+        """Test crawler (get session)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler(fields=fields, session=True)
+
+        self.assertIsInstance(crawler.session, bool)
 
     def test_crawler__with_fields(self):
         """Test crawler (with fields)."""
@@ -306,7 +326,6 @@ class CrawlerTest(unittest.TestCase):
         crawler = Crawler(
             'http://test.com', fields=fields, pagination=pagination, limit=0
         )
-        print(crawler.limit)
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -326,6 +345,30 @@ class CrawlerTest(unittest.TestCase):
             data = crawler.crawl()
 
         self.assertEqual(data, ['A'])
+
+    def test_crawler_without_url(self):
+        """Test crawler without url."""
+        pagination = Pagination(urls=['http://test.com'])
+        fields = {'text': Field(xpath='//a/text()')}
+        crawler = Crawler(fields=fields, pagination=pagination)
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(data, [{'text': 'A'}])
+
+    def test_crawler__with_pagination_and_multiprocessing(self):
+        """Test pagination by iterable function."""
+        pagination = Pagination(urls=['http://test.com' for __ in range(5)])
+        fields = {'text': Field(xpath='//a/text()')}
+        crawler = Crawler(
+            'http://test.com', fields=fields, pagination=pagination, limit=10
+        )
+
+        with HTTMock(server):
+            data = crawler.crawl()
+
+        self.assertEqual(len(data), 5)
 
 
 class SettingsTests(unittest.TestCase):
@@ -387,7 +430,12 @@ class HandlerTest(unittest.TestCase):
 
     def test_cli(self):
         """Test CLI."""
-        handler = Handler()
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler('http://test.com', fields=fields)
+        handler = Handler({'page': crawler})
         handler.argparser.add_argument('test')
         sys.argv = ['run.py', 'test']
 
@@ -429,6 +477,11 @@ class HandlerTest(unittest.TestCase):
         self.assertTrue(os.path.exists('output.json'))
         os.remove('output.json')
 
+    def test_handler__without_cralwers(self):
+        """Test handler."""
+        with self.assertRaises(ValueError):
+            Handler()
+
     def test_handler(self):
         """Test handler."""
         fields = {
@@ -451,6 +504,22 @@ class HandlerTest(unittest.TestCase):
         }
         crawler = Crawler('http://test.com', fields=fields)
         handler = type('TestHandler', (Handler,), {'crawler': crawler})()
+
+        with HTTMock(server):
+            data = handler.start()
+
+        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
+
+    def test_handler__with_settings(self):
+        """Test handler (with settings)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler('http://test.com', fields=fields)
+        handler = type('TestHandler', (Handler,), {'crawler': crawler})(
+            settings=Settings()
+        )
 
         with HTTMock(server):
             data = handler.start()

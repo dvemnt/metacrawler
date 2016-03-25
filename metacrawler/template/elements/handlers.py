@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from metacrawler.pagination import Pagination
 from metacrawler.handlers import Handler
 
 from . import crawlers, constants
@@ -12,9 +13,21 @@ class CustomHandler(Handler):
 
     index = crawlers.IndexCrawler()
 
-    def set_cli_arguments(self):
-        self.argparser.add_argument('url')
+    def get_argparser(self):
+        argparser = super().get_argparser()
+        argparser.add_argument('url')
+        return argparser
 
-    def before(self):
-        self.index.url = self.cli['url']
-        self.session.headers.update({'User-Agent': self.settings.user_agent})
+    def get_index(self):
+        self.index.pagination = Pagination(urls=[
+            'https://github.com', 'https://bitbucket.org',
+            'https://gitlab.com', self.cli['url'], 'https://google.com',
+            'https://linkedin.com', 'https://facebook.com'
+        ])
+        self.index.multiprocessing = True
+        return self.index
+
+    def get_session(self):
+        session = super().get_session()
+        session.headers.update({'User-Agent': self.settings.user_agent})
+        return session

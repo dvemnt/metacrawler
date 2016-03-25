@@ -1,9 +1,12 @@
 # coding=utf-8
 
-AVAILABLE_TYPES = [list, dict, int, float, str]
+from metacrawler.base import Element
 
 
-class Field(object):
+AVAILABLE_TYPES = (list, dict, int, float, str)
+
+
+class Field(Element):
 
     """Field is minimum structure unit. Contains certain value.
     May be nested.
@@ -19,39 +22,56 @@ class Field(object):
         :param postprocessing (optional): `function` postprocessing function.
         :param to (optional): `type` to representation as.
         """
-        self.value = value or getattr(self.__class__, 'value', None)
-        self.xpath = xpath or getattr(self.__class__, 'xpath', None)
-        self.postprocessing = (
-            postprocessing or getattr(self.__class__, 'postprocessing', None)
-        )
-        self.to = getattr(self.__class__, 'to', to)
+        self.__value = value
+        self.__xpath = xpath
+        self.__postprocessing = postprocessing
+        self.__to = to
 
-        assert self.to in AVAILABLE_TYPES, (
-            '`to` must be one of next types: {}'.format(
-                ', '.join(AVAILABLE_TYPES)
-            )
-        )
+        self.__dict__.update(fields or {})
 
-        self.__fields = self._get_fields(fields or {})
+        super().__init__()
 
-    def _get_fields(self, passed_fields):
-        """Get fields.
-
-        :param passed_fields: `dict` passed fields.
-        :returns: `dict` fields.
-        """
-        passed_fields.update(self.__class__.__dict__)
+    @property
+    def fields(self):
+        candidates = {}
+        candidates.update(self.__dict__)
+        candidates.update(self.__class__.__dict__)
         fields = {}
 
-        for name, attribute in passed_fields.items():
+        for name, attribute in candidates.items():
             if isinstance(attribute, Field):
                 fields[name] = attribute
 
         return fields
 
-    def before(self):
-        """Any actions before crawl."""
-        pass
+    def get_value(self):
+        if not self.__value:
+            return getattr(self.__class__, 'value', None)
+
+        return self.__value
+
+    def get_xpath(self):
+        if not self.__xpath:
+            return getattr(self.__class__, 'xpath', None)
+
+        return self.__xpath
+
+    def get_postprocessing(self):
+        if not self.__postprocessing:
+            return getattr(self.__class__, 'postprocessing', None)
+
+        return self.__postprocessing
+
+    def get_to(self):
+        to = getattr(self.__class__, 'to', self.__to)
+
+        assert to in AVAILABLE_TYPES, (
+            '`to` must be one of next types: {}'.format(
+                ', '.join(AVAILABLE_TYPES)
+            )
+        )
+
+        return to
 
     def crawl(self, page):
         """Crawl value from page.
@@ -63,7 +83,7 @@ class Field(object):
 
         if self.value:
             return self.value
-        elif self.__fields:
+        elif self.fields:
             value = self.crawl_subfields(page)
         elif self.xpath is not None:
             value = page.xpath(self.xpath)
@@ -74,11 +94,9 @@ class Field(object):
                 except IndexError:
                     value = None
             else:
-                for item in value:
-                    if not isinstance(item, str):
-                        raise ValueError(
-                            'Items of iterable value must be a string.'
-                        )
+                if not all(isinstance(item, str) for item in value):
+                    raise ValueError('Items of list value must be a string.')
+
                 value = list(value)
         else:
             raise AttributeError(
@@ -93,9 +111,11 @@ class Field(object):
         return value
 
     def crawl_subfields(self, page):
-        """Crawl subfields."""
-        value = None
+        """Crawl subfields.
 
+        :param page: `lxml.Element` instance.
+        :returns: value.
+        """
         if self.to is dict:
             value = {}
 
@@ -103,29 +123,26 @@ class Field(object):
                 try:
                     page = page.xpath(self.xpath)[0]
                 except IndexError:
-                    for name, field in self.__fields.items():
-                        value[name] = None
-                    return value
+                    return {key: None for key in self.fields.keys()}
 
-            for name, field in self.__fields.items():
+            for name, field in self.fields.items():
                 value[name] = field.crawl(page)
         elif self.to is list:
             value = []
 
             if not self.xpath:
                 raise AttributeError(
-                    'For iterable types need pass `xpath=` keyword argument.'
+                    'For list type need pass `xpath=` keyword argument.'
                 )
 
             for block in page.xpath(self.xpath):
-                block_fields = {}
-                for name, field in self.__fields.items():
-                    block_fields[name] = field.crawl(block)
-                value.append(block_fields)
+                value.append(
+                    {n: f.crawl(block) for n, f in self.fields.items()}
+                )
         else:
             raise ValueError(
                 'For nested fields keyword argument `to=` '
-                'must be `dict`, `list` or `tuple`.'
+                'must be `dict` or `list`.'
             )
 
         return value

@@ -6,31 +6,44 @@ import json
 
 import requests
 
+from metacrawler.base import Element
 from metacrawler.settings import Settings
 from metacrawler.crawlers import Crawler
 
 
-class Handler(object):
+class Handler(Element):
 
     """Handler control crawling process."""
 
-    def __init__(self, crawlers=None):
+    def __init__(self, crawlers=None, settings=None):
         """Override initialization object.
 
         :param crawlers (optional): `dict` crawlers.
+        :param settings (optional): `metacrawler.settings.Settings` instance.
         """
-        self.session = requests.Session()
-        self.settings = getattr(self.__class__, 'settings', Settings())
+        self.__settings = settings
 
-        self.__crawlers = self._get_crawlers(crawlers or {})
+        self.__dict__.update(crawlers or {})
         self.__data = {}
-
-        self.argparser = argparse.ArgumentParser()
-        self.argparser.add_argument(
-            '-o', '--output', default='output.json', help='Output file.'
-        )
-        self.set_cli_arguments()
         self.__cli = {}
+
+        super().__init__()
+
+        if not self.crawlers:
+            raise ValueError('Cannot use `Handler` without crawlers.')
+
+    @property
+    def crawlers(self):
+        candidates = {}
+        candidates.update(self.__dict__)
+        candidates.update(self.__class__.__dict__)
+        crawlers = {}
+
+        for name, attribute in candidates.items():
+            if isinstance(attribute, Crawler):
+                crawlers[name] = attribute
+
+        return crawlers
 
     @property
     def data(self):
@@ -45,34 +58,27 @@ class Handler(object):
 
         return copy.deepcopy(self.__cli)
 
-    def _get_crawlers(self, passed_fields):
-        """Get crawlers.
+    def get_session(self):
+        return requests.Session()
 
-        :param passed_fields: `dict` passed fields.
-        :returns: `dict` fields.
-        """
-        passed_fields.update(self.__class__.__dict__)
-        fields = {}
+    def get_settings(self):
+        if not self.__settings:
+            return getattr(self.__class__, 'settings', Settings())
 
-        for name, attribute in passed_fields.items():
-            if isinstance(attribute, Crawler):
-                fields[name] = attribute
+        return self.__settings
 
-        return fields
-
-    def set_cli_arguments(self):
-        """Set CLI arguments."""
-        pass
-
-    def before(self):
-        """Any actions before start."""
-        pass
+    def get_argparser(self):
+        argparser = argparse.ArgumentParser()
+        argparser.add_argument(
+            '-o', '--output', default='output.json', help='Output file.'
+        )
+        return argparser
 
     def start(self):
         """Start crawling."""
         self.before()
 
-        for name, crawler in self.__crawlers.items():
+        for name, crawler in self.crawlers.items():
             self.__data[name] = crawler.crawl()
 
         return self.data

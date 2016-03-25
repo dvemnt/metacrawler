@@ -1,47 +1,62 @@
 # coding=utf-8
 
+import multiprocessing as mp
+
 import requests
 from lxml import html
 
+from metacrawler.base import Element
 from metacrawler.fields import Field
 
 
-class Crawler(object):
+class Crawler(Element):
 
-    """Crawler parse page use items as rules. May be nested."""
+    """Crawler parse page use fields as rules. May be nested."""
 
-    def __init__(self, url=None, fields=None,
-                 collapse=False, session=None, pagination=None, limit=None):
+    def __init__(self, url=None, fields=None, collapse=None,
+                 session=None, pagination=None, limit=None):
         """Override initialization instance.
 
         :param url (optional): `str` URL for page.
         :param fields (optional): `dict` fields.
-        :param collapse (optional): `bool` collapse one field to upper level.
+        :param processes (optional): `int` crawl processes.
+        :param collapse (optional): `bool` collapse field to upper level.
         :param session (optional): `requests.Session` instance.
         :param pagination (optional): `metacrawler.pagination.Pagination`.
         :param limit (optional): `int` limit.
         """
-        self.url = url or getattr(self.__class__, 'url', None)
-        self.pagination = pagination or getattr(
-            self.__class__, 'pagination', None
-        )
-        self.collapse = collapse or getattr(self.__class__, 'collapse', None)
+        self.__url = url
+        self.__collapse = collapse
+        self.__session = session
+        self.__pagination = pagination
+        self.__limit = limit
 
-        if limit is not None:
-            self.limit = limit
-        else:
-            self.limit = getattr(self.__class__, 'limit', None)
+        self.__dict__.update(fields or {})
 
-        self.session = session or requests.Session()
+        super().__init__()
 
-        self.__fields = self._get_fields(fields or {})
+        self.__data = []
 
-        if len(self.__fields) > 1 and self.collapse:
+        if not self.fields:
+            raise ValueError('Cannot use `Crawler` without fields.')
+
+        if len(self.fields) > 1 and self.collapse:
             raise ValueError(
                 'Must not use `collapse` with few fields or/and crawlers.'
             )
 
-        self.__data = [] if self.pagination else {}
+    @property
+    def fields(self):
+        candidates = {}
+        candidates.update(self.__dict__)
+        candidates.update(self.__class__.__dict__)
+        fields = {}
+
+        for name, attribute in candidates.items():
+            if isinstance(attribute, (Crawler, Field)):
+                fields[name] = attribute
+
+        return fields
 
     @property
     def data(self):
@@ -51,24 +66,35 @@ class Crawler(object):
         """
         return self.__data
 
-    def _get_fields(self, passed_fields):
-        """Get fields.
+    def get_url(self):
+        if not self.__url:
+            return getattr(self.__class__, 'url', None)
 
-        :param passed_fields: `dict` passed fields.
-        :returns: `dict` fields.
-        """
-        passed_fields.update(self.__class__.__dict__)
-        fields = {}
+        return self.__url
 
-        for name, attribute in passed_fields.items():
-            if isinstance(attribute, (Field, Crawler)):
-                fields[name] = attribute
+    def get_pagination(self):
+        if not self.__pagination:
+            return getattr(self.__class__, 'pagination', None)
 
-        return fields
+        return self.__pagination
 
-    def before(self):
-        """Any actions before crawl."""
-        pass
+    def get_collapse(self):
+        if not isinstance(self.__collapse, bool):
+            return getattr(self.__class__, 'collapse', False)
+
+        return self.__collapse
+
+    def get_limit(self):
+        if not isinstance(self.__limit, int):
+            return getattr(self.__class__, 'limit', None)
+
+        return self.__limit
+
+    def get_session(self):
+        if not self.__session:
+            return getattr(self.__class__, 'session', requests.Session())
+
+        return self.__session
 
     def crawl(self, *args, **kwargs):
         """Crawl page.
@@ -78,30 +104,45 @@ class Crawler(object):
         self.before()
         data = []
 
-        while self.url:
+        def parse(response):
+            page = html.fromstring(response.content)
+
             if self.limit is not None and int(self.limit) <= len(data):
-                break
-
-            page = html.fromstring(
-                self.session.get(self.url, verify=False).content
-            )
-            page_data = {}
-
-            for name, field in self.__fields.items():
-                page_data[name] = field.crawl(page)
-
-                if self.collapse:
-                    collapse_field = name
+                return page
 
             if self.collapse:
-                if self.__fields[collapse_field].to is list:
-                    data.extend(page_data[collapse_field])
+                field = list(self.fields.items())[0][1]
+                if field.to is list:
+                    data.extend(field.crawl(page))
                 else:
-                    data.append(page_data[collapse_field])
+                    data.append(field.crawl(page))
             else:
-                data.append(page_data)
+                data.append({n: f.crawl(page) for n, f in self.fields.items()})
 
-            self.paginate(page)
+            return page
+
+        try:
+            iterator = iter(self.pagination)
+        except TypeError:
+            iterator = None
+
+        if iterator:
+            pool = mp.Pool()
+
+            results = []
+            for url in iterator:
+                result = pool.apply_async(
+                    self.session.get, args=(url,), kwds={'verify': False},
+                    callback=parse
+                )
+                results.append(result)
+
+            for result in results:
+                result.wait()
+        else:
+            while self.url:
+                page = parse(self.session.get(self.url, verify=False))
+                self.paginate(page)
 
         if self.pagination:
             self.__data.extend(data)
