@@ -5,3 +5,4 @@ httmock
 lxml
 nose
 requests
+grequests

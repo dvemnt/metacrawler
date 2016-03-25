@@ -1,8 +1,7 @@
 # coding=utf-8
 
-import multiprocessing as mp
-
 import requests
+import grequests
 from lxml import html
 
 from metacrawler.base import Element
@@ -14,7 +13,7 @@ class Crawler(Element):
     """Crawler parse page use fields as rules. May be nested."""
 
     def __init__(self, url=None, fields=None, collapse=None,
-                 session=None, pagination=None, limit=None):
+                 session=None, pagination=None, limit=None, timeout=None):
         """Override initialization instance.
 
         :param url (optional): `str` URL for page.
@@ -24,12 +23,14 @@ class Crawler(Element):
         :param session (optional): `requests.Session` instance.
         :param pagination (optional): `metacrawler.pagination.Pagination`.
         :param limit (optional): `int` limit.
+        :param timeout (optional): `float` request timeout.
         """
         self.__url = url
         self.__collapse = collapse
         self.__session = session
         self.__pagination = pagination
         self.__limit = limit
+        self.__timeout = timeout
 
         self.__dict__.update(fields or {})
 
@@ -96,6 +97,12 @@ class Crawler(Element):
 
         return self.__session
 
+    def get_timeout(self):
+        if not self.__timeout:
+            return getattr(self.__class__, 'timeout', 3.0)
+
+        return self.__timeout
+
     def crawl(self, *args, **kwargs):
         """Crawl page.
 
@@ -127,18 +134,16 @@ class Crawler(Element):
             iterator = None
 
         if iterator:
-            pool = mp.Pool()
+            requests_list = []
 
-            results = []
             for url in iterator:
-                result = pool.apply_async(
-                    self.session.get, args=(url,), kwds={'verify': False},
-                    callback=parse
-                )
-                results.append(result)
+                requests_list.append(grequests.request(
+                    'GET', url, session=self.session, timeout=self.timeout
+                ))
 
-            for result in results:
-                result.wait()
+            for response in grequests.map(requests_list):
+                if response:
+                    parse(response)
         else:
             while self.url:
                 page = parse(self.session.get(self.url, verify=False))

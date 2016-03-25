@@ -210,6 +210,16 @@ class CrawlerTest(unittest.TestCase):
 
         self.assertFalse(crawler.collapse)
 
+    def test_crawler__get_timeout(self):
+        """Test crawler (get timeout)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler = Crawler(fields=fields, timeout=1.0)
+
+        self.assertEqual(crawler.timeout, 1.0)
+
     def test_crawler__get_session(self):
         """Test crawler (get session)."""
         fields = {
