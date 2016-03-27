@@ -1,6 +1,6 @@
 # MetaCrawler #
 
-*Create your own crawler.*
+*A lightweight Python crawling framework.*
 
 [![Build Status](https://travis-ci.org/pyvim/metacrawler.svg?branch=master)](https://travis-ci.org/pyvim/metacrawler)
 [![Coverage Status](https://coveralls.io/repos/github/pyvim/metacrawler/badge.svg?branch=master)](https://coveralls.io/github/pyvim/metacrawler?branch=master)
