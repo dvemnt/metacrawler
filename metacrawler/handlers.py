@@ -78,15 +78,18 @@ class Handler(Element):
 
         return self.data
 
-    def output(self, compact=False):
+    def output(self, compact=False, data=None):
         """Output to file.
 
         :param compact (optional): `bool` compact output.
+        :param data (optional): data.
         """
+        data = data or self.data
+
         if compact:
-            data = json.dumps(self.data, ensure_ascii=False)
+            data = json.dumps(data, ensure_ascii=False)
         else:
-            data = json.dumps(self.data, indent=4, ensure_ascii=False)
+            data = json.dumps(data, indent=4, ensure_ascii=False)
 
         with open(self.cli['output'], 'w') as f:
             f.write(data)
