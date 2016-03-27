@@ -3,8 +3,4 @@ omit =
     *metacralwer/template/*
     *metacrawler/commands.py
 exclude_lines =
-    try:
-        from urlparse import urlparse
-    except ImportError:
-        from urllib.parse import urllib
     return self.next()

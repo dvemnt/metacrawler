@@ -25,18 +25,18 @@ class Crawler(Element):
         :param limit (optional): `int` limit.
         :param timeout (optional): `float` request timeout.
         """
-        self.__url = url
-        self.__collapse = collapse
-        self.__session = session
-        self.__pagination = pagination
-        self.__limit = limit
-        self.__timeout = timeout
+        self.url = url
+        self.collapse = collapse
+        self.session = session
+        self.pagination = pagination
+        self.limit = limit
+        self.timeout = timeout
 
         self.__dict__.update(fields or {})
 
         super().__init__()
 
-        self.__data = []
+        self.data = []
 
         if not self.fields:
             raise ValueError('Cannot use `Crawler` without fields.')
@@ -59,49 +59,38 @@ class Crawler(Element):
 
         return fields
 
-    @property
-    def data(self):
-        """The data property.
-
-        :returns: `list` data.
-        """
-        return self.__data
-
     def get_url(self):
-        if not self.__url:
-            return getattr(self.__class__, 'url', None)
-
-        return self.__url
+        return self.url or getattr(self.__class__, 'url', None)
 
     def get_pagination(self):
-        if not self.__pagination:
+        if not self.pagination:
             return getattr(self.__class__, 'pagination', None)
 
-        return self.__pagination
+        return self.pagination
 
     def get_collapse(self):
-        if not isinstance(self.__collapse, bool):
+        if not isinstance(self.collapse, bool):
             return getattr(self.__class__, 'collapse', False)
 
-        return self.__collapse
+        return self.collapse
 
     def get_limit(self):
-        if not isinstance(self.__limit, int):
+        if not isinstance(self.limit, int):
             return getattr(self.__class__, 'limit', None)
 
-        return self.__limit
+        return self.limit
 
     def get_session(self):
-        if not self.__session:
+        if not self.session:
             return getattr(self.__class__, 'session', requests.Session())
 
-        return self.__session
+        return self.session
 
     def get_timeout(self):
-        if not self.__timeout:
+        if not self.timeout:
             return getattr(self.__class__, 'timeout', 3.0)
 
-        return self.__timeout
+        return self.timeout
 
     def crawl(self, *args, **kwargs):
         """Crawl page.
@@ -150,9 +139,9 @@ class Crawler(Element):
                 self.paginate(page)
 
         if self.pagination:
-            self.__data.extend(data)
+            self.data.extend(data)
         else:
-            self.__data = data[0]
+            self.data = data[0]
 
         return self.data
 

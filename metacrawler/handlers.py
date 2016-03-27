@@ -21,7 +21,7 @@ class Handler(Element):
         :param crawlers (optional): `dict` crawlers.
         :param settings (optional): `metacrawler.settings.Settings` instance.
         """
-        self.__settings = settings
+        self.settings = settings
 
         self.data = {}
         self.__dict__.update(crawlers or {})
@@ -57,10 +57,10 @@ class Handler(Element):
         return requests.Session()
 
     def get_settings(self):
-        if not self.__settings:
+        if not self.settings:
             return getattr(self.__class__, 'settings', Settings())
 
-        return self.__settings
+        return self.settings
 
     def get_argparser(self):
         argparser = argparse.ArgumentParser()
