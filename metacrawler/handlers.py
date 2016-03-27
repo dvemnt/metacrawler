@@ -23,8 +23,8 @@ class Handler(Element):
         """
         self.__settings = settings
 
+        self.data = {}
         self.__dict__.update(crawlers or {})
-        self.__data = {}
         self.__cli = {}
 
         super().__init__()
@@ -44,11 +44,6 @@ class Handler(Element):
                 crawlers[name] = attribute
 
         return crawlers
-
-    @property
-    def data(self):
-        """The data property."""
-        return copy.deepcopy(self.__data)
 
     @property
     def cli(self):
@@ -79,7 +74,7 @@ class Handler(Element):
         self.before()
 
         for name, crawler in self.crawlers.items():
-            self.__data[name] = crawler.crawl()
+            self.data[name] = crawler.crawl()
 
         return self.data
 
