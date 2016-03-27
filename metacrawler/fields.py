@@ -22,10 +22,10 @@ class Field(Element):
         :param postprocessing (optional): `function` postprocessing function.
         :param to (optional): `type` to representation as.
         """
-        self.__value = value
-        self.__xpath = xpath
-        self.__postprocessing = postprocessing
-        self.__to = to
+        self.value = value
+        self.xpath = xpath
+        self.postprocessing = postprocessing
+        self.to = to
 
         self.__dict__.update(fields or {})
 
@@ -45,25 +45,19 @@ class Field(Element):
         return fields
 
     def get_value(self):
-        if not self.__value:
-            return getattr(self.__class__, 'value', None)
-
-        return self.__value
+        return self.value or getattr(self.__class__, 'value', None)
 
     def get_xpath(self):
-        if not self.__xpath:
-            return getattr(self.__class__, 'xpath', None)
-
-        return self.__xpath
+        return self.xpath or getattr(self.__class__, 'xpath', None)
 
     def get_postprocessing(self):
-        if not self.__postprocessing:
+        if not self.postprocessing:
             return getattr(self.__class__, 'postprocessing', None)
 
-        return self.__postprocessing
+        return self.postprocessing
 
     def get_to(self):
-        to = getattr(self.__class__, 'to', self.__to)
+        to = getattr(self.__class__, 'to', self.to)
 
         assert to in AVAILABLE_TYPES, (
             '`to` must be one of next types: {}'.format(

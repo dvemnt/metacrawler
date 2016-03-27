@@ -27,10 +27,11 @@ class ElementTest(unittest.TestCase):
     def test_get_attributes(self):
         """Test get attributes."""
         element_class = type('TestElement', (Element,), {})
-        element_class.get_value = lambda self: 'value'
+        element_class.get_test = lambda self: 'test'
+        element_class.get_other_test = lambda self: self.test
         element = element_class()
 
-        self.assertEqual(element.value, 'value')
+        self.assertEqual(element.test, 'test')
 
     def test_get_attributes__not_function(self):
         """Test get attributes (not function)."""
@@ -38,8 +39,15 @@ class ElementTest(unittest.TestCase):
         element_class.get_value = None
         element = element_class()
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(TypeError):
             __ = element.value
+
+    def test_get_attributes__without_attribute_and_function(self):
+        """Test get attributes (not function)."""
+        element = type('TestElement', (Element,), {})()
+
+        with self.assertRaises(AttributeError):
+            __ = element.test
 
 
 class FieldTest(unittest.TestCase):
