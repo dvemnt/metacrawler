@@ -1,6 +1,8 @@
 title:      Library Reference
 prev_title: Installation
 prev_url:   install
+next_title: API
+next_url:   api.html
 
 
 # Using MetaCrawler #
@@ -13,8 +15,6 @@ Default architecture of cralwer using MetaCrawler have next hierarchy:
 - `Crawler` - load web-pages and manages items;
 - `Item` - finds need blocks on the web-page and manages fields;
 - `Field` - parse concrete values;
-
-For successfully crawling need define all elements.
 
 ## Example usage ##
 
