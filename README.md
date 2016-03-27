@@ -22,6 +22,7 @@ python run.py
 cat output.json
 ```
 
+Also see [example](https://github.com/pyvim/metacrawler/tree/master/metacrawler/template).
 
 ## Documentation ##
 
