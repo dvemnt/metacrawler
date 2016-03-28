@@ -34,7 +34,7 @@ setup(
     package_data={
         'metacrawler/template': ['*.config'],
     },
-    description='Create your own crawler.',
+    description='A lightweight Python crawling framework.',
     long_description=long_description,
     author='Vitalii Maslov',
     author_email='me@pyvim.com',
