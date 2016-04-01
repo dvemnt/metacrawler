@@ -94,8 +94,8 @@ class Field(Element):
                 value = list(value)
         else:
             raise AttributeError(
-                'Cannot call `.search()` as no `value=`, `xpath=` or '
-                '`function=` keywords argument was passed when instantiating '
+                'Cannot call `.crawl()` as no `value=`, `xpath=` or '
+                'keywords argument was passed when instantiating '
                 'the field instance.'
             )
 
