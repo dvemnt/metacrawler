@@ -85,13 +85,6 @@ class FieldTest(unittest.TestCase):
 
         self.assertEqual(value, 'test')
 
-    def test_crawl_value__with_postprocessing(self):
-        """Test crawl value with postprocessing."""
-        field = Field(xpath='//a/@href', postprocessing=lambda x: x[:2])
-        value = field.crawl(self.page)
-
-        self.assertEqual(value, 'te')
-
     def test_crawl_value__with_to_list(self):
         """Test crawl value by xpath."""
         field = Field(xpath='//a/@href', to=list)
@@ -196,7 +189,7 @@ class CrawlerTest(unittest.TestCase):
     def test_crawler__without_fields(self):
         """Test crawler (without fields)."""
         with self.assertRaises(ValueError):
-            Crawler('http://test.com', fields={})
+            Crawler()
 
     def test_crawler__get_url(self):
         """Test crawler (get url)."""
@@ -204,7 +197,8 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler(fields=fields)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler = crawler_class()
 
         self.assertEqual(crawler.url, None)
 
@@ -214,7 +208,8 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler(fields=fields)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler = crawler_class()
 
         self.assertFalse(crawler.collapse)
 
@@ -224,7 +219,9 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler(fields=fields, timeout=1.0)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.timeout = 1.0
+        crawler = crawler_class()
 
         self.assertEqual(crawler.timeout, 1.0)
 
@@ -234,7 +231,9 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler(fields=fields, session=True)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.session = True
+        crawler = crawler_class()
 
         self.assertIsInstance(crawler.session, bool)
 
@@ -244,40 +243,14 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
 
         self.assertEqual(data, {'text': 'A', 'href': 'href'})
-
-    def test_crawler__with_class_fields(self):
-        """Test crawler (with class items)."""
-        field = Field(xpath='//a/text()')
-        crawler = type(
-            'TestCrawler', (Crawler,), {'field': field}
-        )('http://test.com')
-
-        with HTTMock(server):
-            data = crawler.crawl()
-
-        self.assertEqual(data, {'field': 'A'})
-
-    def test_crawler__with_class_crawlers(self):
-        """Test crawler (with class crawlers)."""
-        fields = {
-            'text': Field(xpath='//a/text()'),
-            'href': Field(xpath='//a/@href'),
-        }
-        crawler = Crawler('http://test.com', fields=fields)
-        nested_crawler = type(
-            'TestCrawler', (Crawler,), {'crawler': crawler}
-        )('http://test.com')
-
-        with HTTMock(server):
-            data = nested_crawler.crawl()
-
-        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
 
     def test_crawler__nested(self):
         """Test crawler (nested)."""
@@ -285,14 +258,19 @@ class CrawlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
-        crawlers = {'friends': crawler}
-        nested_crawler = Crawler('http://test.com', fields=crawlers)
+        crawler = type(
+            'TestCrawler', (Crawler,),
+            {'fields': fields, 'url': 'http://test.com'}
+        )()
+        nested_crawler = type(
+            'NestedCrawler', (Crawler,),
+            {'crawler': crawler, 'url': 'http://test.com'}
+        )()
 
         with HTTMock(server):
             data = nested_crawler.crawl()
 
-        self.assertEqual(data, {'friends': {'text': 'A', 'href': 'href'}})
+        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
 
     def test_crawler_collapse__error(self):
         """Test crawler collapse (error)."""
@@ -302,12 +280,17 @@ class CrawlerTest(unittest.TestCase):
         }
 
         with self.assertRaises(ValueError):
-            Crawler('http://test.com', fields=fields, collapse=True)
+            type(
+                'TestCrawler', (Crawler,), {'fields': fields, 'collapse': True}
+            )()
 
     def test_crawler_collapse(self):
         """Test crawler collapse."""
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler('http://test.com', fields=fields, collapse=True)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler_class.collapse = True
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -317,7 +300,10 @@ class CrawlerTest(unittest.TestCase):
     def test_crawler_collapse__list(self):
         """Test crawler collapse (list)."""
         fields = {'text': Field(xpath='//a/text()', to=list)}
-        crawler = Crawler('http://test.com', fields=fields, collapse=True)
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler_class.collapse = True
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -328,9 +314,12 @@ class CrawlerTest(unittest.TestCase):
         """Test crawler pagination."""
         pagination = Pagination(xpath='//a/@test', host='http://test.com')
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler(
-            'http://test.com', fields=fields, pagination=pagination
+        crawler_class = type(
+            'TestCrawler', (Crawler,),
+            {'fields': fields, 'pagination': pagination}
         )
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -341,9 +330,13 @@ class CrawlerTest(unittest.TestCase):
         """Test crawler pagination with limit."""
         pagination = Pagination(xpath='//a/@test', host='http://test.com')
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler(
-            'http://test.com', fields=fields, pagination=pagination, limit=0
+        crawler_class = type(
+            'TestCrawler', (Crawler,),
+            {'fields': fields, 'pagination': pagination}
         )
+        crawler_class.url = 'http://test.com'
+        crawler_class.limit = 0
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -354,10 +347,11 @@ class CrawlerTest(unittest.TestCase):
         """Test crawler pagination."""
         pagination = Pagination(xpath='//a/@test', host='http://test.com')
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler(
-            'http://test.com', fields=fields, pagination=pagination,
-            collapse=True
-        )
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler_class.pagination = pagination
+        crawler_class.collapse = True
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -368,7 +362,11 @@ class CrawlerTest(unittest.TestCase):
         """Test crawler without url."""
         pagination = Pagination(urls=['http://test.com'])
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler(fields=fields, pagination=pagination)
+        crawler_class = type(
+            'TestCrawler', (Crawler,),
+            {'fields': fields, 'pagination': pagination}
+        )
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -379,9 +377,12 @@ class CrawlerTest(unittest.TestCase):
         """Test pagination by iterable function."""
         pagination = Pagination(urls=['http://test.com' for __ in range(5)])
         fields = {'text': Field(xpath='//a/text()')}
-        crawler = Crawler(
-            'http://test.com', fields=fields, pagination=pagination, limit=10
-        )
+
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler_class.pagination = pagination
+        crawler_class.limit = 10
+        crawler = crawler_class()
 
         with HTTMock(server):
             data = crawler.crawl()
@@ -452,8 +453,12 @@ class HandlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
-        handler = Handler({'page': crawler})
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
+
+        handler_class = type('TestHandler', (Handler,), {'page': crawler})
+        handler = handler_class()
         handler.argparser.add_argument('test')
         sys.argv = ['run.py', 'test']
 
@@ -466,8 +471,12 @@ class HandlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
-        handler = Handler({'page': crawler})
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
+
+        handler_class = type('TestHandler', (Handler,), {'page': crawler})
+        handler = handler_class()
         handler.argparser.add_argument('test')
 
         with HTTMock(server):
@@ -484,8 +493,12 @@ class HandlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
-        handler = Handler({'page': crawler})
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
+
+        handler_class = type('TestHandler', (Handler,), {'page': crawler})
+        handler = handler_class()
         handler.argparser.add_argument('test')
 
         with HTTMock(server):
@@ -496,7 +509,7 @@ class HandlerTest(unittest.TestCase):
         os.remove('output.json')
 
     def test_handler__without_cralwers(self):
-        """Test handler."""
+        """Test handler without crawlers."""
         with self.assertRaises(ValueError):
             Handler()
 
@@ -506,27 +519,17 @@ class HandlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
-        handler = Handler({'page': crawler})
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
+
+        handler_class = type('TestHandler', (Handler,), {'page': crawler})
+        handler = handler_class()
 
         with HTTMock(server):
             data = handler.start()
 
         self.assertEqual(data, {'page': {'text': 'A', 'href': 'href'}})
-
-    def test_handler__with_class_crawlers(self):
-        """Test handler (with class crawlers)."""
-        fields = {
-            'text': Field(xpath='//a/text()'),
-            'href': Field(xpath='//a/@href'),
-        }
-        crawler = Crawler('http://test.com', fields=fields)
-        handler = type('TestHandler', (Handler,), {'crawler': crawler})()
-
-        with HTTMock(server):
-            data = handler.start()
-
-        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
 
     def test_handler__with_settings(self):
         """Test handler (with settings)."""
@@ -534,10 +537,13 @@ class HandlerTest(unittest.TestCase):
             'text': Field(xpath='//a/text()'),
             'href': Field(xpath='//a/@href'),
         }
-        crawler = Crawler('http://test.com', fields=fields)
-        handler = type('TestHandler', (Handler,), {'crawler': crawler})(
-            settings=Settings()
-        )
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
+
+        handler_class = type('TestHandler', (Handler,), {'crawler': crawler})
+        handler_class.settings = Settings()
+        handler = handler_class()
 
         with HTTMock(server):
             data = handler.start()

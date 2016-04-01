@@ -15,16 +15,8 @@ class Handler(Element):
 
     """Handler control crawling process."""
 
-    def __init__(self, crawlers=None, settings=None):
-        """Override initialization object.
-
-        :param crawlers (optional): `dict` crawlers.
-        :param settings (optional): `metacrawler.settings.Settings` instance.
-        """
-        self.__settings = settings
-
+    def __init__(self):
         self.data = {}
-        self.__dict__.update(crawlers or {})
         self.__cli = {}
 
         super().__init__()
@@ -34,12 +26,9 @@ class Handler(Element):
 
     @property
     def crawlers(self):
-        candidates = {}
-        candidates.update(self.__dict__)
-        candidates.update(self.__class__.__dict__)
         crawlers = {}
 
-        for name, attribute in candidates.items():
+        for name, attribute in self.__class__.__dict__.items():
             if isinstance(attribute, Crawler):
                 crawlers[name] = attribute
 
@@ -57,10 +46,7 @@ class Handler(Element):
         return requests.Session()
 
     def get_settings(self):
-        if not self.__settings:
-            return getattr(self.__class__, 'settings', Settings())
-
-        return self.__settings
+        return getattr(self.__class__, 'settings', Settings())
 
     def get_argparser(self):
         argparser = argparse.ArgumentParser()

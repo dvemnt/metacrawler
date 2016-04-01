@@ -24,4 +24,4 @@ def execute(*args, **kwargs):
 def start_project(kwargs):
     """Action."""
     template_path = os.path.join(metacrawler.__path__[0], 'template')
-    copy_tree(template_path, kwargs['path'], update=1)
+    copy_tree(template_path, kwargs['path'])

@@ -12,19 +12,16 @@ class Field(Element):
     May be nested.
     """
 
-    def __init__(self, value=None, xpath=None,
-                 fields=None, postprocessing=None, to=str):
+    def __init__(self, value=None, xpath=None, fields=None, to=str):
         """Override initialization instance.
 
         :param value (optional): value cap.
         :param xpath (optional): `str` xpath for extracting value from page.
         :param fields (optional): `dict` fields.
-        :param postprocessing (optional): `function` postprocessing function.
         :param to (optional): `type` to representation as.
         """
         self.value = value
         self.xpath = xpath
-        self.postprocessing = postprocessing
         self.to = to
 
         self.__dict__.update(fields or {})
@@ -49,12 +46,6 @@ class Field(Element):
 
     def get_xpath(self):
         return self.xpath or getattr(self.__class__, 'xpath', None)
-
-    def get_postprocessing(self):
-        if not self.postprocessing:
-            return getattr(self.__class__, 'postprocessing', None)
-
-        return self.postprocessing
 
     def get_to(self):
         to = getattr(self.__class__, 'to', self.to)
@@ -99,10 +90,7 @@ class Field(Element):
                 'the field instance.'
             )
 
-        if value is not None and self.postprocessing is not None:
-            value = self.postprocessing(value)
-
-        return value
+        return self.clean(value)
 
     def crawl_subfields(self, page):
         """Crawl subfields.
@@ -139,4 +127,7 @@ class Field(Element):
                 'must be `dict` or `list`.'
             )
 
+        return value
+
+    def clean(self, value):
         return value
