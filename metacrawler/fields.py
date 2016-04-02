@@ -90,7 +90,7 @@ class Field(Element):
                 'the field instance.'
             )
 
-        if not value:
+        if value:
             value = self.clean(value)
 
         return value
