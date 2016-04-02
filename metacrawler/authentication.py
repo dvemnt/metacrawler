@@ -59,21 +59,19 @@ class Authentication(object):
 
         return data
 
-    def authentication(self, page=None, session=None):
+    def authentication(self, session=None):
         """Authentication.
 
-        :param page (optional): `lxml.Element` authentication page.
         :param session (optional): `requests.Session` instance.
         :returns: `requests.Session` instance.
         """
         session = session or requests.Session()
 
-        if not page and self.url:
+        if self.url:
             page = html.fromstring(session.get(self.url).content)
-        elif not (page or self.url):
+        else:
             raise ValueError(
-                'For call `authentication` method '
-                'need pass page as first argument or pass `url` '
+                'For call `authentication` method need pass pass `url` '
                 'keyword argument in initialization call.'
             )
 
