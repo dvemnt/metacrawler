@@ -57,6 +57,9 @@ class Crawler(Element):
     def get_timeout(self):
         return getattr(self.__class__, 'timeout', 3.0)
 
+    def get_authentication(self):
+        return getattr(self.__class__, 'authentication', None)
+
     def crawl(self, *args, **kwargs):
         """Crawl page.
 
@@ -64,6 +67,9 @@ class Crawler(Element):
         """
         self.before()
         data = []
+
+        if self.authentication is not None:
+            self.session = self.authentication.authentication(self.session)
 
         def parse(response):
             page = html.fromstring(response.content)
