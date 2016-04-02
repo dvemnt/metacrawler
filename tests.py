@@ -395,6 +395,23 @@ class CrawlerTest(unittest.TestCase):
 
         self.assertEqual(len(data), 5)
 
+    def test_handler__with_authentication(self):
+        """Test handler (with authentication)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler_class.authentication = Authentication(url='http://form.com')
+        crawler = crawler_class()
+
+        with HTTMock(server):
+            with HTTMock(form):
+                data = crawler.crawl()
+
+        self.assertEqual(data, {'text': 'A', 'href': 'href'})
+
 
 class SettingsTests(unittest.TestCase):
 
