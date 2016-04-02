@@ -61,9 +61,7 @@ class Handler(Element):
     def start(self):
         """Start crawling."""
         if self.authentication is not None:
-            self.session = self.authentication.authentication(
-                session=self.session
-            )
+            self.session = self.authentication.authentication(self.session)
 
         self.before()
 
