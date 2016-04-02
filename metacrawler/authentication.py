@@ -24,13 +24,10 @@ class Authentication(object):
         :param page: `lxml.Element` instance.
         :returns: `lxml.Element` form.
         """
-        assert self.xpath, (
-            'Cannot call `.get_form()` as no `xpath`'
-            '`function=` keywords argument was passed when instantiating '
-            'the field instance.'
-        )
-
-        return page.xpath(self.xpath)
+        try:
+            return page.xpath(self.xpath or '//form')[0]
+        except IndexError:
+            raise ValueError('Form not found.')
 
     def get_login_url(self, form):
         """Get login url in form.
@@ -38,7 +35,10 @@ class Authentication(object):
         :param form: `lxml.Element` instance.
         :returns: `str` login URL.
         """
-        return form.xpath('@action')[0]
+        try:
+            return form.xpath('@action')[0]
+        except IndexError:
+            raise ValueError('Login URL not found.')
 
     def get_form_data(self, form):
         """Get data for submit form.

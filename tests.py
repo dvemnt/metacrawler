@@ -13,11 +13,17 @@ from metacrawler.fields import Field
 from metacrawler.crawlers import Crawler
 from metacrawler.pagination import Pagination
 from metacrawler.settings import Settings
+from metacrawler.authentication import Authentication
 
 @urlmatch(netloc=r'(.*\.)?test\.com$')
 def server(*args, **kwargs):
     """Simple webserver."""
     return '<html><body><a id="id" href="href">A</a></body></html>'
+
+@urlmatch(netloc=r'(.*\.)?form\.com$')
+def form(*args, **kwargs):
+    """Webserver with form."""
+    return '<html><body><form action="http://test.com"></form></body></html>'
 
 
 class ElementTest(unittest.TestCase):
@@ -549,3 +555,54 @@ class HandlerTest(unittest.TestCase):
             data = handler.start()
 
         self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
+
+    def test_handler__with_authentication(self):
+        """Test handler (with authentication)."""
+        fields = {
+            'text': Field(xpath='//a/text()'),
+            'href': Field(xpath='//a/@href'),
+        }
+        crawler_class = type('TestCrawler', (Crawler,), {'fields': fields})
+        crawler_class.url = 'http://test.com'
+        crawler = crawler_class()
+
+        handler_class = type('TestHandler', (Handler,), {'crawler': crawler})
+        handler_class.authentication = Authentication(url='http://form.com')
+        handler = handler_class()
+
+        with HTTMock(server):
+            with HTTMock(form):
+                data = handler.start()
+
+        self.assertEqual(data, {'crawler': {'text': 'A', 'href': 'href'}})
+
+
+class AuthenticationTest(unittest.TestCase):
+
+    """Test `metacrawler.authentication.Authentication` class."""
+
+    def test_get_form_without_xpath(self):
+        instance = Authentication(url='http://test.com')
+        page = html.fromstring('<html></html>')
+
+        with self.assertRaises(ValueError):
+            instance.get_form(page)
+
+    def test_get_login_url__wrong_form(self):
+        instance = Authentication(url='http://test.com')
+        page = html.fromstring('<form></form>')
+
+        with self.assertRaises(ValueError):
+            instance.get_login_url(page)
+
+    def test_get_form_data__wrong_input(self):
+        instance = Authentication(url='http://test.com')
+        page = html.fromstring('<form><input name></form>')
+
+        instance.get_form_data(page)
+
+    def test_authentication__without_page_and_url(self):
+        instance = Authentication()
+
+        with self.assertRaises(ValueError):
+            instance.authentication()
