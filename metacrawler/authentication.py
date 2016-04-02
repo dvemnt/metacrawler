@@ -8,10 +8,10 @@ class Authentication(object):
 
     """Authentication model."""
 
-    def __init__(self, url=None, xpath=None, **data):
+    def __init__(self, url, xpath=None, **data):
         """Override initialization instance.
 
-        :param url (optional): `str` url to authentication page.
+        :param url: `str` url to authentication page.
         :param xpath (optional): `str` XPath string for find form.
         :param **data (optional): key-value form data.
         """
@@ -67,13 +67,7 @@ class Authentication(object):
         """
         session = session or requests.Session()
 
-        if self.url:
-            page = html.fromstring(session.get(self.url).content)
-        else:
-            raise ValueError(
-                'For call `authentication` method need pass pass `url` '
-                'keyword argument in initialization call.'
-            )
+        page = html.fromstring(session.get(self.url).content)
 
         form = self.get_form(page)
         data = self.get_form_data(form)

@@ -617,9 +617,3 @@ class AuthenticationTest(unittest.TestCase):
         page = html.fromstring('<form><input name></form>')
 
         instance.get_form_data(page)
-
-    def test_authentication__without_page_and_url(self):
-        instance = Authentication()
-
-        with self.assertRaises(ValueError):
-            instance.authentication()
