@@ -13,7 +13,6 @@ Default architecture of cralwer using MetaCrawler have next hierarchy:
 
 - `Handler` - manages crawlers, settings and the crawl process;
 - `Crawler` - load web-pages and manages items;
-- `Item` - finds need blocks on the web-page and manages fields;
 - `Field` - parse concrete values;
 
 ## Example usage ##
