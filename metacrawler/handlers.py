@@ -59,8 +59,12 @@ class Handler(Element):
         """Start crawling."""
         self.before()
 
+        data = {}
+
         for name, crawler in self.crawlers.items():
-            self.data[name] = crawler.crawl()
+            data[name] = crawler.crawl()
+
+        self.data = self.clean(data)
 
         return self.data
 

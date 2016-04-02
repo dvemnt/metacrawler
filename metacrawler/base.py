@@ -44,3 +44,6 @@ class Element(object):
     def before(self):
         """Any actions before start crawling."""
         pass
+
+    def clean(self, value):
+        return value

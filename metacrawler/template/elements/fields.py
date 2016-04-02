@@ -9,3 +9,7 @@ class HeaderField(Field):
     to = dict
 
     text = Field(xpath='text()')
+
+    def clean(self, value):
+        value['cap'] = 'Test'
+        return value

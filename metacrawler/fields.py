@@ -128,6 +128,3 @@ class Field(Element):
             )
 
         return value
-
-    def clean(self, value):
-        return value

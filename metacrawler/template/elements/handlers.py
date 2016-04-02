@@ -24,7 +24,6 @@ class CustomHandler(Handler):
             'https://gitlab.com', self.cli['url'], 'https://google.com',
             'https://linkedin.com', 'https://facebook.com'
         ])
-        self.index.multiprocessing = True
         return self.index
 
     def get_session(self):

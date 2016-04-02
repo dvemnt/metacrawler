@@ -108,7 +108,7 @@ class Crawler(Element):
         else:
             self.__data = data[0]
 
-        return self.data
+        return self.clean(self.data)
 
     def paginate(self, page):
         """Paginate.
