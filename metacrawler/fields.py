@@ -90,7 +90,10 @@ class Field(Element):
                 'the field instance.'
             )
 
-        return self.clean(value)
+        if not value:
+            value = self.clean(value)
+
+        return value
 
     def crawl_subfields(self, page):
         """Crawl subfields.
