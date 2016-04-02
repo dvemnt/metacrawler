@@ -11,6 +11,7 @@ class Authentication(object):
     def __init__(self, url=None, xpath=None, **data):
         """Override initialization instance.
 
+        :param url (optional): `str` url to authentication page.
         :param xpath (optional): `str` XPath string for find form.
         :param **data (optional): key-value form data.
         """
@@ -61,7 +62,7 @@ class Authentication(object):
     def authentication(self, page=None, session=None):
         """Authentication.
 
-        :param page: `lxml.Element` authentication page.
+        :param page (optional): `lxml.Element` authentication page.
         :param session (optional): `requests.Session` instance.
         :returns: `requests.Session` instance.
         """

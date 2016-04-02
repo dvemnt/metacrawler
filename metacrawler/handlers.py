@@ -55,8 +55,16 @@ class Handler(Element):
         )
         return argparser
 
+    def get_authentication(self):
+        return getattr(self.__class__, 'authentication', None)
+
     def start(self):
         """Start crawling."""
+        if self.authentication is not None:
+            self.session = self.authentication.authentication(
+                session=self.session
+            )
+
         self.before()
 
         data = {}
