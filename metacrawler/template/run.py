@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from elements.handlers import CustomHandler
+from elements import CustomHandler
 
 if __name__ == '__main__':
     handler = CustomHandler()

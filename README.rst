@@ -1,7 +1,7 @@
 ===========
 MetaCrawler
 ===========
-*Create your own crawler.*
+*A lightweight Python crawling framework.*
 
 Installation
 ------------
