@@ -28,7 +28,11 @@ class Handler(Element):
     def crawlers(self):
         crawlers = {}
 
-        for name, attribute in self.__class__.__dict__.items():
+        candidates = {}
+        candidates.update(self.__dict__)
+        candidates.update(self.__class__.__dict__)
+
+        for name, attribute in candidates.items():
             if isinstance(attribute, Crawler):
                 crawlers[name] = attribute
 
